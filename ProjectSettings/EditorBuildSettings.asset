@@ -5,16 +5,7 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
-    path: Assets/_Game/Game.unity
-    guid: 9fc0d4010bbf28b4594072e72b8655ab
-  - enabled: 0
-    path: Assets/_GameLiteNetLib/GameLiteNetLib.unity
-    guid: 071eba7d61f8d4cdeb7a93df0ea25b06
-  - enabled: 0
-    path: Assets/Client_v2/Demo/client_v1_test.unity
-    guid: 2cde83f21facc484b9a055cfd3a691d8
   - enabled: 1
-    path: Assets/Client_v2/GameDemo/Clientv2_GameDemo.unity
+    path: Assets/_GameDemo/Clientv2_GameDemo.unity
     guid: a245dcb0e40bf47beb439677489e5dad
   m_configObjects: {}
