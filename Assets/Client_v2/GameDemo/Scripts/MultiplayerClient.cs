@@ -29,7 +29,20 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
 
         player.GetComponent<Renderer>().material.color = color;
 
-        connector = new LNSConnector("iamatestserver",this);
+
+
+
+
+        LNSConnectSettings settings = new LNSConnectSettings();
+        settings.gameKey = "com.hybriona.multiplayertest";
+        settings.gameVersion = Application.version;
+        settings.serverIp = "45.55.33.88";
+        settings.serverPort = 10002;
+        settings.serverSecurityKey = "iamatestserver";
+
+
+        //settings.serverIp = "192.168.0.100";
+        connector = new LNSConnector(settings,this);
         connector.id = this.id;
         if (writer == null)
         {
@@ -59,13 +72,12 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
         */
     }
     public void Connect()
-    { 
-        connector.Connect("45.55.33.88", 10002);
-        //connector.Connect("127.0.0.1", 10002);
+    {
+        connector.Connect();
         
     }
 
-    public void OnDataReceived(LNSClient from, NetPacketReader reader)
+    public void OnDataReceived(LNSClient from, NetPacketReader reader, DeliveryMethod deliveryMethod)
     {
 
         string playerid = null;
@@ -84,6 +96,13 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
         rot.z = reader.GetFloat();
         rot.w = reader.GetFloat();
 
+        long timestamp = reader.GetLong();
+        float delay =  (float) (System.DateTime.UtcNow -  System.DateTime.FromFileTimeUtc(timestamp)).TotalMilliseconds;
+        if(delay > 400)
+        {
+           
+            return;
+        }
         if (others.ContainsKey(playerid))
         {
             others[playerid].SetTarget(pos, rot);
@@ -91,7 +110,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
     }
 
     
-    private void OnRoomJoinFailed(LNSConstants.ROOM_FAILURE_CODE code)
+    private void OnRoomJoinFailed(ROOM_FAILURE_CODE code)
     {
         Debug.Log("OnRoomJoinFailed "+code.ToString());
     }
@@ -114,7 +133,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
 
     private void OnPlayerConnected(LNSClient client)
     {
-        Debug.Log("OnPlayerConnected " + client.id);
+        Debug.LogFormat("OnPlayerConnected {0} {1} {2} {3}",client.id,client.displayName,client.gameVersion,client.platform.ToString());
         //Debug.Log("connected " + client.id);
         if (others.ContainsKey(client.id))
         {
@@ -162,6 +181,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
             {
                 timeupdated = Time.time;
                 writer.Reset();
+                
                 writer.Put(player.transform.position.x);
                 writer.Put(player.transform.position.y);
                 writer.Put(player.transform.position.z);
@@ -171,6 +191,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
                 writer.Put(player.transform.rotation.z);
                 writer.Put(player.transform.rotation.w);
 
+                writer.Put(System.DateTime.Now.ToFileTimeUtc());
                 connector.SendData(writer, DeliveryMethod.Unreliable);
             }
         }

@@ -28,7 +28,7 @@ public class ConnectUI : BaseUI
         Globals.Instance.multiplayerClient.connector.onRoomJoinFailed = OnRoomJoinFailed;
     }
 
-    private void OnRoomJoinFailed(LNSConstants.ROOM_FAILURE_CODE code)
+    private void OnRoomJoinFailed(ROOM_FAILURE_CODE code)
     {
         Debug.Log("OnRoomJoinFailed "+ code.ToString());
         EnableInput("Room doesn't exist "+code.ToString());
@@ -40,10 +40,10 @@ public class ConnectUI : BaseUI
         Hide();
     }
 
-    private void OnRoomCreateFailed()
+    private void OnRoomCreateFailed(ROOM_FAILURE_CODE code)
     {
-        Debug.Log("OnRoomCreateFailed");
-        EnableInput("Failed to create room!");
+        Debug.Log("OnRoomCreateFailed "+ code);
+        EnableInput("Failed to create room! "+ code);
     }
 
     private void OnRoomCreated()

@@ -35,7 +35,7 @@ public class LNSConnector
 
    
 
-    private string securityKey;
+    private LNSConnectSettings settings;
     private LNSMainThreadDispatcher threadDispatcher;
     private ILNSDataReceiver dataReceiver;
     private NetManager client;
@@ -48,18 +48,25 @@ public class LNSConnector
     private string _lastconnectedIP;
     private int _lastconnectedPort;
     private string _lastConnectedRoom;
-    public LNSConnector(string securityKey, ILNSDataReceiver dataReceiver)
+    public LNSConnector(LNSConnectSettings settings, ILNSDataReceiver dataReceiver)
     {
-        
-        this.securityKey = securityKey;
+        this.settings = settings;
+       
+
         this.dataReceiver = dataReceiver;
         this.threadDispatcher = LNSMainThreadDispatcher.GetInstance();
         writer = new NetDataWriter();
+        this.settings.Validate();
 
         EventBasedNetListener listener = new EventBasedNetListener();
         client = new NetManager(listener);
 
         listener.NetworkReceiveEvent += Listener_NetworkReceiveEvent;
+    }
+
+    public void Connect()
+    {
+        Connect(this.settings.serverIp, this.settings.serverPort);
     }
 
     public void Connect(string ip, int port)
@@ -74,7 +81,7 @@ public class LNSConnector
             client.Start();
             try
             {
-                peer =  client.Connect(ip, port,this.securityKey);
+                peer =  client.Connect(ip, port,this.settings.serverSecurityKey);
                 
                 if (peer != null )
                 {
@@ -185,7 +192,7 @@ public class LNSConnector
 
                 Debug.Log("Reconnecting: Begin");
                 client.Flush();
-                peer = client.Connect(_lastconnectedIP, _lastconnectedPort, this.securityKey);
+                peer = client.Connect(_lastconnectedIP, _lastconnectedPort, this.settings.serverSecurityKey);
                 while (peer.ConnectionState == ConnectionState.Outgoing)
                 {
                     Thread.Sleep(10);
@@ -222,8 +229,9 @@ public class LNSConnector
         {
             writer.Reset();
             writer.Put(LNSConstants.SERVER_EVT_CREATE_ROOM);
-            writer.Put(id);
-            writer.Put(displayName);
+            WritePlayerData(writer);
+
+
             writer.Put(roomid);
             writer.Put(isPublic);
             if(string.IsNullOrEmpty(password))
@@ -250,8 +258,7 @@ public class LNSConnector
         {
             writer.Reset();
             writer.Put(LNSConstants.SERVER_EVT_JOIN_ROOM);
-            writer.Put(id);
-            writer.Put(displayName);
+            WritePlayerData(writer);
             writer.Put(roomid);
             if (string.IsNullOrEmpty(password))
             {
@@ -273,8 +280,7 @@ public class LNSConnector
         {
             writer.Reset();
             writer.Put(LNSConstants.SERVER_EVT_REJOIN_ROOM);
-            writer.Put(id);
-            writer.Put(displayName);
+            WritePlayerData(writer);
             writer.Put(_lastConnectedRoom);
 
             client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
@@ -289,8 +295,7 @@ public class LNSConnector
         {
             writer.Reset();
             writer.Put(LNSConstants.SERVER_EVT_CREATE_OR_JOIN_ROOM);
-            writer.Put(id);
-            writer.Put(displayName);
+            WritePlayerData(writer);
             writer.Put(roomid);
             writer.Put(maxPlayers);
             client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
@@ -352,6 +357,16 @@ public class LNSConnector
     }
 
 
+    protected void WritePlayerData(NetDataWriter writer)
+    {
+        writer.Put(id);
+        writer.Put(displayName);
+        writer.Put(this.settings.gameKey);
+        writer.Put(this.settings.gameVersion);
+        writer.Put(this.settings.platform);
+    }
+
+
     private void Listener_NetworkReceiveEvent(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
     {
         byte clientInstruction = reader.GetByte();
@@ -372,9 +387,10 @@ public class LNSConnector
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_FAILED_CREATE)
         {
+            byte reason = reader.GetByte();
             if (onRoomCreateFailed != null)
             {
-                threadDispatcher.Add(() => onRoomCreateFailed());
+                threadDispatcher.Add(() => onRoomCreateFailed((ROOM_FAILURE_CODE) reason));
             }
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_FAILED_JOIN)
@@ -382,7 +398,7 @@ public class LNSConnector
             byte reason = reader.GetByte();
             if (onRoomJoinFailed != null)
             {
-                threadDispatcher.Add(() => onRoomJoinFailed((LNSConstants.ROOM_FAILURE_CODE) reason));
+                threadDispatcher.Add(() => onRoomJoinFailed((ROOM_FAILURE_CODE) reason));
             }
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_FAILED_REJOIN)
@@ -390,7 +406,7 @@ public class LNSConnector
             byte reason = reader.GetByte();
             if (onRoomRejoinFailed != null)
             {
-                threadDispatcher.Add(() => onRoomRejoinFailed((LNSConstants.ROOM_FAILURE_CODE)reason));
+                threadDispatcher.Add(() => onRoomRejoinFailed((ROOM_FAILURE_CODE)reason));
             }
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_JOINED)
@@ -427,6 +443,8 @@ public class LNSConnector
         {
             string client_id = reader.GetString();
             string client_displayName = reader.GetString();
+            string client_version = reader.GetString();
+            CLIENT_PLATFORM client_platform = (CLIENT_PLATFORM) reader.GetByte();
 
             LNSClient client = null;
             for(int i=0;i<clients.Count;i++)
@@ -435,6 +453,8 @@ public class LNSConnector
                 {
                     client = clients[i];
                     client.displayName = client_displayName;
+                    client.gameVersion = client_version;
+                    client.platform = client_platform;
                     break;
                 }
             }
@@ -443,6 +463,9 @@ public class LNSConnector
             {
                 client = new LNSClient(client_id);
                 client.displayName = client_displayName;
+                client.gameVersion = client_version;
+                client.platform = client_platform;
+
                 clients.Add(client);
             }
             client.isConnected = true;
@@ -479,17 +502,19 @@ public class LNSConnector
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_RAW)
         {
             string fromid = reader.GetString();
+            
             for (int i = 0; i < clients.Count; i++)
             {
                 if(fromid == clients[i].id)
                 {
                     if (dataReceiver != null)
                     {
+                        DeliveryMethod _deliveryMethod = deliveryMethod;
                         threadDispatcher.Add(() =>
                         {
                             try
                             {
-                                dataReceiver.OnDataReceived(clients[i], reader);
+                                dataReceiver.OnDataReceived(clients[i], reader, _deliveryMethod);
                             }
                             catch { }
                             reader.Recycle();

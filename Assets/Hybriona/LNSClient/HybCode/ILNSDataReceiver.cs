@@ -5,6 +5,6 @@ using UnityEngine;
 
 public interface ILNSDataReceiver
 {
-     void OnDataReceived(LNSClient client, NetPacketReader reader);
+     void OnDataReceived(LNSClient client, NetPacketReader reader, DeliveryMethod deliveryMethod);
     
 }

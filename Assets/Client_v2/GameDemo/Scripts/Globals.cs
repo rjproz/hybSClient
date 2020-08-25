@@ -16,7 +16,7 @@ public class Globals : MonoBehaviour
     private void Awake()
     {
         Instance = this;
-        
+        Application.targetFrameRate = 60;
         multiplayerClient.Initialize(SystemInfo.deviceUniqueIdentifier);
         Globals.Instance.multiplayerClient.connector.onConnected = OnConnected;
         Globals.Instance.multiplayerClient.connector.onFailedToConnect = OnFailedToConnect;
