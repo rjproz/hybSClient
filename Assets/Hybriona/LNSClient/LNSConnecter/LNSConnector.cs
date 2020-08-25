@@ -184,7 +184,7 @@ public class LNSConnector
 
     public bool ReconnectAndRejoin(int retries = 20)
     {
-        if (!isConnected && !isInActiveRoom && !string.IsNullOrEmpty(_lastConnectedRoom))
+        if (!isConnected && !isInActiveRoom && WasConnectedToARoom())
         {
             //TODO Reconnect logic
             new Thread(() =>
@@ -224,8 +224,16 @@ public class LNSConnector
         return false;
     }
 
+
+    public bool WasConnectedToARoom()
+    {
+        return !string.IsNullOrEmpty(_lastConnectedRoom);
+    }
+
     public void Disconnect()
     {
+        _lastConnectedRoom = null;
+        _lastconnectedIP = null;
         isConnected = false;
         clients.Clear();
         client.DisconnectAll();
@@ -391,13 +399,14 @@ public class LNSConnector
     {
         if (isConnected && isInActiveRoom)
         {
-
+            _lastConnectedRoom = null;
             lock (thelock)
             {
                 writer.Reset();
                 writer.Put(LNSConstants.SERVER_EVT_LEAVE_ROOM);
                 client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
             }
+           
         }
     }
 
