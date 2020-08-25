@@ -64,13 +64,17 @@ public class LNSConnector
         listener.NetworkReceiveEvent += Listener_NetworkReceiveEvent;
     }
 
-    public void Connect()
+    public bool Connect()
     {
-        Connect(this.settings.serverIp, this.settings.serverPort);
+        return Connect(this.settings.serverIp, this.settings.serverPort);
     }
 
-    public void Connect(string ip, int port)
+    public bool Connect(string ip, int port)
     {
+        if(isConnected)
+        {
+            return false;
+        }
         _lastconnectedIP = ip;
         _lastconnectedPort = port;
         new Thread(() =>
@@ -143,6 +147,7 @@ public class LNSConnector
 
 
         }).Start();
+        return false;
     }
 
     protected void Update()
@@ -177,40 +182,46 @@ public class LNSConnector
     }
 
 
-    public void ReconnectAndRejoin(int retries = 20)
+    public bool ReconnectAndRejoin(int retries = 20)
     {
-        //TODO Reconnect logic
-        new Thread(() =>
+        if (!isConnected && !isInActiveRoom && !string.IsNullOrEmpty(_lastConnectedRoom))
         {
-            for (int i = 0; i < retries; i++)
+            //TODO Reconnect logic
+            new Thread(() =>
             {
-                try
+                for (int i = 0; i < retries; i++)
                 {
-                    client.Start();
-                }
-                catch { }
+                    try
+                    {
+                        client.Start();
+                    }
+                    catch { }
 
-                Debug.Log("Reconnecting: Begin");
-                client.Flush();
-                peer = client.Connect(_lastconnectedIP, _lastconnectedPort, this.settings.serverSecurityKey);
-                while (peer.ConnectionState == ConnectionState.Outgoing)
-                {
-                    Thread.Sleep(10);
+                    Debug.Log("Reconnecting: Begin");
+                    client.Flush();
+                    peer = client.Connect(_lastconnectedIP, _lastconnectedPort, this.settings.serverSecurityKey);
+                    while (peer.ConnectionState == ConnectionState.Outgoing)
+                    {
+                        Thread.Sleep(10);
+                    }
+
+                    if (peer.ConnectionState == ConnectionState.Connected)
+                    {
+                        Debug.Log("Reconnecting : Connected");
+                        isConnected = true;
+                        Debug.Log("Reconnecting : Rejoining Room");
+                        Update();
+                        RejoinRoom();
+                        return;
+                    }
+                    Debug.Log("Reconnecting : Not Connected");
+                    Thread.Sleep(5000);
                 }
-                
-                if (peer.ConnectionState == ConnectionState.Connected)
-                {
-                    Debug.Log("Reconnecting : Connected");
-                    isConnected = true;
-                    Debug.Log("Reconnecting : Rejoining Room");
-                    Update();
-                    RejoinRoom();
-                    return;
-                }
-                Debug.Log("Reconnecting : Not Connected");
-                Thread.Sleep(5000);
-            }
-        }).Start();
+            }).Start();
+
+            return true;
+        }
+        return false;
     }
 
     public void Disconnect()
@@ -221,138 +232,172 @@ public class LNSConnector
     }
 
 
-    public void CreateRoom(string roomid,bool isPublic = true,string password = null, int maxPlayers = 1000)
+    public bool CreateRoom(string roomid,bool isPublic = true,string password = null, int maxPlayers = 1000)
     {
-        _lastConnectedRoom = roomid;
-        //TODO Check if player is already in a room
-        lock (thelock)
+        if (isConnected && !isInActiveRoom)
         {
-            writer.Reset();
-            writer.Put(LNSConstants.SERVER_EVT_CREATE_ROOM);
-            WritePlayerData(writer);
-
-
-            writer.Put(roomid);
-            writer.Put(isPublic);
-            if(string.IsNullOrEmpty(password))
+            _lastConnectedRoom = roomid;
+            //TODO Check if player is already in a room
+            lock (thelock)
             {
-                writer.Put(false);
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_CREATE_ROOM);
+                WritePlayerData(writer);
+
+
+                writer.Put(roomid);
+                writer.Put(isPublic);
+                if (string.IsNullOrEmpty(password))
+                {
+                    writer.Put(false);
+                }
+                else
+                {
+                    writer.Put(true);
+                    writer.Put(password);
+                }
+
+
+                writer.Put(maxPlayers);
+                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
             }
-            else
+            return true;
+        }
+        return false;
+    }
+
+    public bool JoinRoom(string roomid,string password = null)
+    {
+        if (isConnected && !isInActiveRoom)
+        {
+            _lastConnectedRoom = roomid;
+            //TODO Check if player is already in a room
+            lock (thelock)
             {
-                writer.Put(true);
-                writer.Put(password);
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_JOIN_ROOM);
+                WritePlayerData(writer);
+                writer.Put(roomid);
+                if (string.IsNullOrEmpty(password))
+                {
+                    writer.Put(false);
+                }
+                else
+                {
+                    writer.Put(true);
+                    writer.Put(password);
+                }
+
+                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
             }
-            
-
-            writer.Put(maxPlayers);
-            client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+            return true;
         }
+        return false;
     }
 
-    public void JoinRoom(string roomid,string password = null)
+    protected bool RejoinRoom()
     {
-        _lastConnectedRoom = roomid;
-        //TODO Check if player is already in a room
-        lock (thelock)
-        {
-            writer.Reset();
-            writer.Put(LNSConstants.SERVER_EVT_JOIN_ROOM);
-            WritePlayerData(writer);
-            writer.Put(roomid);
-            if (string.IsNullOrEmpty(password))
-            {
-                writer.Put(false);
-            }
-            else
-            {
-                writer.Put(true);
-                writer.Put(password);
-            }
-
-            client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
-        }
-    }
-
-    protected void RejoinRoom()
-    {
-        lock (thelock)
-        {
-            writer.Reset();
-            writer.Put(LNSConstants.SERVER_EVT_REJOIN_ROOM);
-            WritePlayerData(writer);
-            writer.Put(_lastConnectedRoom);
-
-            client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
-        }
-    }
-
-    public void JoinRoomOrCreateIfNotExist(string roomid,int maxPlayers = 1000)
-    {
-        _lastConnectedRoom = roomid;
-        //TODO Check if player is already in a room
-        lock (thelock)
-        {
-            writer.Reset();
-            writer.Put(LNSConstants.SERVER_EVT_CREATE_OR_JOIN_ROOM);
-            WritePlayerData(writer);
-            writer.Put(roomid);
-            writer.Put(maxPlayers);
-            client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
-        }
-    }
-
-    public void LockRoom()
-    {
-        //TODO Check if player is already in a room
-        lock (thelock)
-        {
-            writer.Reset();
-            writer.Put(LNSConstants.SERVER_EVT_LOCK_ROOM);        
-            client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
-        }
-    }
-
-    public void UnLockRoom()
-    {
-        //TODO Check if player is already in a room
-        lock (thelock)
-        {
-            writer.Reset();
-            writer.Put(LNSConstants.SERVER_EVT_UNLOCK_ROOM);
-            client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
-        }
-    }
-
-
-
-    public void SendData(NetDataWriter m_writer, DeliveryMethod deliveryMethod)
-    {
-        if (!isConnected)
-            return;
-
-        new Thread(() =>
+        if (isConnected && !isInActiveRoom)
         {
             lock (thelock)
             {
                 writer.Reset();
-                writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_NOCACHE);
-                writer.Put(m_writer.Data);
-                client.SendToAll(writer, deliveryMethod);
+                writer.Put(LNSConstants.SERVER_EVT_REJOIN_ROOM);
+                WritePlayerData(writer);
+                writer.Put(_lastConnectedRoom);
+
+                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
             }
-        }).Start();
+            return true;
+        }
+        return false;
+    }
+
+    public bool JoinRoomOrCreateIfNotExist(string roomid,int maxPlayers = 1000)
+    {
+        if (isConnected && !isInActiveRoom)
+        {
+            _lastConnectedRoom = roomid;
+            lock (thelock)
+            {
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_CREATE_OR_JOIN_ROOM);
+                WritePlayerData(writer);
+                writer.Put(roomid);
+                writer.Put(maxPlayers);
+                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public bool LockRoom()
+    {
+        if (isConnected && isInActiveRoom)
+        {
+            lock (thelock)
+            {
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_LOCK_ROOM);
+                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public bool UnLockRoom()
+    {
+        if (isConnected && isInActiveRoom)
+        {
+            lock (thelock)
+            {
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_UNLOCK_ROOM);
+                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+            }
+            return true;
+        }
+        return false;
+    }
+
+
+
+    public bool RaiseEvent(int eventID,NetDataWriter m_writer, DeliveryMethod deliveryMethod)
+    {
+        if (isConnected && isInActiveRoom)
+        {
+
+            new Thread(() =>
+            {
+                lock (thelock)
+                {
+                    writer.Reset();
+                    writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_NOCACHE);
+                    writer.Put(eventID);
+                    writer.Put(m_writer.Data);
+                    client.SendToAll(writer, deliveryMethod);
+                }
+            }).Start();
+            return true;
+        }
+        return false;
     }
 
 
 
     public void DisconnectFromRoom()
     {
-        //TODO Check if player is already in a room
-        lock (thelock)
+        if (isConnected && isInActiveRoom)
         {
-            writer.Reset();
-            writer.Put(LNSConstants.SERVER_EVT_LEAVE_ROOM);      
-            client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+
+            lock (thelock)
+            {
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_LEAVE_ROOM);
+                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+            }
         }
     }
 
@@ -514,7 +559,7 @@ public class LNSConnector
                         {
                             try
                             {
-                                dataReceiver.OnDataReceived(clients[i], reader, _deliveryMethod);
+                                dataReceiver.OnEventRaised(clients[i],reader.GetInt(), reader, _deliveryMethod);
                             }
                             catch { }
                             reader.Recycle();

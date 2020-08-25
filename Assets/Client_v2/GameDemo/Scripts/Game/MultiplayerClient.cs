@@ -77,35 +77,37 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
         
     }
 
-    public void OnDataReceived(LNSClient from, NetPacketReader reader, DeliveryMethod deliveryMethod)
+    public void OnEventRaised(LNSClient from,int eventID, NetPacketReader reader, DeliveryMethod deliveryMethod)
     {
-
-        string playerid = null;
-        Vector3 pos = Vector3.zero;
-        Quaternion rot = Quaternion.identity;
-
-        playerid = from.id;
-
-        pos.x = reader.GetFloat();
-        pos.y = reader.GetFloat();
-        pos.z = reader.GetFloat();
-
-
-        rot.x = reader.GetFloat();
-        rot.y = reader.GetFloat();
-        rot.z = reader.GetFloat();
-        rot.w = reader.GetFloat();
-
-        long timestamp = reader.GetLong();
-        float delay =  (float) (System.DateTime.UtcNow -  System.DateTime.FromFileTimeUtc(timestamp)).TotalMilliseconds;
-        if(delay > 400)
+        if (eventID == 0)
         {
+            string playerid = from.id; ;
+            Vector3 pos = Vector3.zero;
+            Quaternion rot = Quaternion.identity;
+
            
-            return;
-        }
-        if (others.ContainsKey(playerid))
-        {
-            others[playerid].SetTarget(pos, rot);
+
+            pos.x = reader.GetFloat();
+            pos.y = reader.GetFloat();
+            pos.z = reader.GetFloat();
+
+
+            rot.x = reader.GetFloat();
+            rot.y = reader.GetFloat();
+            rot.z = reader.GetFloat();
+            rot.w = reader.GetFloat();
+
+            long timestamp = reader.GetLong();
+            float delay = (float)(System.DateTime.UtcNow - System.DateTime.FromFileTimeUtc(timestamp)).TotalMilliseconds;
+            if (delay > 400)
+            {
+                //Discard old packet
+                return;
+            }
+            if (others.ContainsKey(playerid))
+            {
+                others[playerid].SetTarget(pos, rot);
+            }
         }
     }
 
@@ -177,7 +179,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
     {
         if (connector.isConnected && connector.isInActiveRoom)
         {
-            if (Time.time - timeupdated > .04f)
+            if (Time.time - timeupdated > .1f)
             {
                 timeupdated = Time.time;
                 writer.Reset();
@@ -192,7 +194,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
                 writer.Put(player.transform.rotation.w);
 
                 writer.Put(System.DateTime.Now.ToFileTimeUtc());
-                connector.SendData(writer, DeliveryMethod.Unreliable);
+                connector.RaiseEvent(0,writer, DeliveryMethod.Unreliable);
             }
         }
             
