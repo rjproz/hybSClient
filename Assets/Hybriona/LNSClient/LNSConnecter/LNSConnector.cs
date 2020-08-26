@@ -8,12 +8,13 @@ using UnityEngine;
 
 public class LNSConnector
 {
-    public string id { get; set; }
-    public string displayName { get; set; }
+   
 
+   
     public bool isConnected { get; private set; }
     public bool isInActiveRoom { get; private set; } = false;
 
+    public LNSClient localClient { get; private set; }
     public List<LNSClient> clients { get; private set; } = new List<LNSClient>();
     public bool isLocalPlayerMasterClient { get; private set; } = false;
 
@@ -36,6 +37,9 @@ public class LNSConnector
    
 
     private LNSConnectSettings settings;
+    private string id;
+    private string displayName;
+
     private LNSMainThreadDispatcher threadDispatcher;
     private ILNSDataReceiver dataReceiver;
     private NetManager client;
@@ -49,6 +53,7 @@ public class LNSConnector
     private string _lastconnectedIP;
     private int _lastconnectedPort;
     private string _lastConnectedRoom;
+    private string _lastConnectedRoomMasterClient;
     public LNSConnector(LNSConnectSettings settings, ILNSDataReceiver dataReceiver)
     {
         this.settings = settings;
@@ -56,13 +61,45 @@ public class LNSConnector
 
         this.dataReceiver = dataReceiver;
         this.threadDispatcher = LNSMainThreadDispatcher.GetInstance();
+
+        localClient = new LNSClient();
         writer = new NetDataWriter();
         this.settings.Validate();
 
         EventBasedNetListener listener = new EventBasedNetListener();
         client = new NetManager(listener);
 
+
         listener.NetworkReceiveEvent += Listener_NetworkReceiveEvent;
+        
+    }
+
+    public bool SetClientId(string id)
+    {
+        if (!isConnected)
+        {   
+            localClient.id = this.id = id;
+        }
+        return false;
+    }
+
+    public bool SetDisplayName(string displayName)
+    {
+        if(isConnected && isInActiveRoom)
+        {
+            return false;
+        }
+        localClient.displayName = this.displayName = displayName;
+        return true;
+    }
+
+    public int GetPing()
+    {
+        if(isConnected)
+        {
+            return peer.Ping;
+        }
+        return -1;
     }
 
     public bool Connect()
@@ -97,7 +134,7 @@ public class LNSConnector
 
                     if(peer.ConnectionState == ConnectionState.Connected)
                     {
-                        isConnected = true;
+                        localClient.isConnected = isConnected = true;
                         threadDispatcher.Add(() =>
                         {
                             if (onConnected != null)
@@ -109,7 +146,7 @@ public class LNSConnector
                     }
                     else
                     {
-                        connectionFailed = true;
+                       connectionFailed = true;
                        
                     }
                    
@@ -127,7 +164,7 @@ public class LNSConnector
             
             if(connectionFailed)
             {
-                isConnected = false;
+                localClient.isConnected = isConnected = false;
                 threadDispatcher.Add(() =>
                 {
                     if (onFailedToConnect != null)
@@ -161,7 +198,7 @@ public class LNSConnector
                 {
                     threadDispatcher.Add(() =>
                     {
-                        isConnected = false;
+                        localClient.isConnected = isConnected = false;
                         isInActiveRoom = false;
                         if (onDisconnected != null)
                         {
@@ -209,7 +246,7 @@ public class LNSConnector
                     if (peer.ConnectionState == ConnectionState.Connected)
                     {
                         Debug.Log("Reconnecting : Connected");
-                        isConnected = true;
+                        localClient.isConnected = isConnected = true;
                         Debug.Log("Reconnecting : Rejoining Room");
                         Update();
                         RejoinRoom();
@@ -235,7 +272,7 @@ public class LNSConnector
     {
         _lastConnectedRoom = null;
         _lastconnectedIP = null;
-        isConnected = false;
+        localClient.isConnected = isConnected = false;
         clients.Clear();
         client.DisconnectAll();
     }
@@ -373,7 +410,7 @@ public class LNSConnector
 
 
 
-    public bool RaiseEvent(ushort eventID,LNSWriter m_writer, DeliveryMethod deliveryMethod)
+    public bool RaiseEventOnAll(ushort eventCode,LNSWriter m_writer, DeliveryMethod deliveryMethod)
     {
         if (isConnected && isInActiveRoom)
         {
@@ -384,8 +421,71 @@ public class LNSConnector
                 {
                     writer.Reset();
                     writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_NOCACHE);
-                    writer.Put(eventID);
+                    writer.Put(eventCode);
                     writer.Put(m_writer.Data);
+                    client.SendToAll(writer, deliveryMethod);
+                }
+            }).Start();
+            return true;
+        }
+        return false;
+    }
+
+    public bool RaiseEventOnAllAndCache(ushort eventCode, LNSWriter m_writer)
+    {
+        if (isConnected && isInActiveRoom)
+        {
+
+            new Thread(() =>
+            {
+                lock (thelock)
+                {
+                    writer.Reset();
+                    writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_CACHE);
+                    writer.Put(eventCode);
+                    writer.Put(m_writer.Data);
+                    client.SendToAll(writer,DeliveryMethod.ReliableOrdered);
+                }
+            }).Start();
+            return true;
+        }
+        return false;
+    }
+
+
+   
+
+    public bool RaiseEventOnClient(LNSClient client, ushort eventCode, LNSWriter m_writer, DeliveryMethod deliveryMethod)
+    {
+        return RaiseEventOnClient(client.id, eventCode, m_writer, deliveryMethod);
+    }
+
+    public bool RaiseEventOnMasterClient (ushort eventCode, LNSWriter m_writer, DeliveryMethod deliveryMethod)
+    {
+        if(isLocalPlayerMasterClient)
+        {
+            return false;
+        }
+        return RaiseEventOnClient(_lastConnectedRoomMasterClient, eventCode, m_writer, deliveryMethod);
+    }
+
+    public bool RaiseEventOnClient(string clientid,ushort eventCode, LNSWriter m_writer, DeliveryMethod deliveryMethod)
+    {
+        if (isConnected && isInActiveRoom)
+        {
+
+            new Thread(() =>
+            {
+                lock (thelock)
+                {
+                    writer.Reset();
+                    writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_TO_CLIENT);
+                    writer.Put(clientid);
+                    writer.Put(eventCode);
+                    if (m_writer.Data.Length > 0)
+                    {
+                        writer.Put(m_writer.Data);
+                    }
                     client.SendToAll(writer, deliveryMethod);
                 }
             }).Start();
@@ -482,15 +582,43 @@ public class LNSConnector
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_MASTERCLIENT_CHANGED)
         {
-            string masterclientid = packetReader.GetString();
-            isLocalPlayerMasterClient = (masterclientid == id);
-          
-            if(onMasterClientUpdated != null)
+            _lastConnectedRoomMasterClient = packetReader.GetString();
+            localClient.isMasterClient = isLocalPlayerMasterClient = (_lastConnectedRoomMasterClient == id);
+            //UnityEngine.Debug.Log("CLIENT_EVT_ROOM_MASTERCLIENT_CHANGED : "+ _lastConnectedRoomMasterClient);
+            if (onMasterClientUpdated != null)
             {
-                threadDispatcher.Add(() =>
+                try
                 {
-                    onMasterClientUpdated(masterclientid);
-                });
+                    if (isLocalPlayerMasterClient)
+                    {
+                        onMasterClientUpdated(localClient);
+                    }
+                    else
+                    {
+                        for (int i = 0; i < clients.Count; i++)
+                        {
+                            if (clients[i].id == _lastConnectedRoomMasterClient)
+                            {
+                                clients[i].isMasterClient = true;
+                                LNSClient client = clients[i];
+                                threadDispatcher.Add(() =>
+                                {
+                                   
+                                    onMasterClientUpdated(client);
+                                });
+                                
+                            }
+                            else
+                            {
+                                clients[i].isMasterClient = false;
+                            }
+                        }
+                    }
+                }catch(System.Exception ex)
+                {
+                    Debug.LogError(ex.Message + " " + ex.StackTrace);
+                }
+                
             }
             
         }
@@ -498,7 +626,6 @@ public class LNSConnector
         {
             string client_id = packetReader.GetString();
             string client_displayName = packetReader.GetString();
-            string client_version = packetReader.GetString();
             CLIENT_PLATFORM client_platform = (CLIENT_PLATFORM) packetReader.GetByte();
 
             LNSClient client = null;
@@ -508,7 +635,6 @@ public class LNSConnector
                 {
                     client = clients[i];
                     client.displayName = client_displayName;
-                    client.gameVersion = client_version;
                     client.platform = client_platform;
                     break;
                 }
@@ -516,9 +642,9 @@ public class LNSConnector
 
             if(client == null)
             {
-                client = new LNSClient(client_id);
+                client = new LNSClient();
+                client.id = client_id;
                 client.displayName = client_displayName;
-                client.gameVersion = client_version;
                 client.platform = client_platform;
 
                 clients.Add(client);

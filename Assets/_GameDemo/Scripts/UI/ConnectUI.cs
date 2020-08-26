@@ -78,14 +78,14 @@ public class ConnectUI : BaseUI
     {
 
         Processing();
-        Globals.Instance.multiplayerClient.connector.displayName = userNameText.text;
+        Globals.Instance.multiplayerClient.connector.SetDisplayName(userNameText.text);
         Globals.Instance.multiplayerClient.connector.CreateRoom(roomIdText.text,true, passwordText.text);
     }
 
     public void OnJoinRoomClicked()
     {
         Processing();
-        Globals.Instance.multiplayerClient.connector.displayName = userNameText.text;
+        Globals.Instance.multiplayerClient.connector.SetDisplayName(userNameText.text);
         Globals.Instance.multiplayerClient.connector.JoinRoom(roomIdText.text, passwordText.text);
     }
 }

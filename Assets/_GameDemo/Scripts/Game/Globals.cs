@@ -17,12 +17,11 @@ public class Globals : MonoBehaviour
     {
         Instance = this;
         Application.targetFrameRate = 60;
-        multiplayerClient.Initialize(SystemInfo.deviceUniqueIdentifier);
+        multiplayerClient.Initialize(SystemInfo.deviceUniqueIdentifier+"_"+UnityEngine.Random.Range(1,99999));
         Globals.Instance.multiplayerClient.connector.onConnected = OnConnected;
         Globals.Instance.multiplayerClient.connector.onFailedToConnect = OnFailedToConnect;
         Globals.Instance.multiplayerClient.connector.onDisconnected = OnDisconnected;
-
-
+        
         connectUI.Show();
         connectUI.Processing();
         multiplayerClient.Connect();
@@ -32,7 +31,10 @@ public class Globals : MonoBehaviour
     {
         
         Debug.LogError("Disconnected from Server");
-        Globals.Instance.multiplayerClient.connector.ReconnectAndRejoin();
+        if (Globals.Instance.multiplayerClient.connector.WasConnectedToARoom())
+        {
+            Globals.Instance.multiplayerClient.connector.ReconnectAndRejoin();
+        }
     }
 
     private void OnFailedToConnect()

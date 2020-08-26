@@ -4,12 +4,13 @@ using UnityEngine;
 
 public class Clone : MonoBehaviour
 {
+    
     public void SetColor(Color color)
     {
         GetComponent<Renderer>().material.color = color;
     }
 
-    private Vector3 tpos;
+    private Vector3 tpos = new Vector3(0,-1,0);
     private Quaternion trot;
     public void SetTarget(Vector3 pos,Quaternion rot)
     {

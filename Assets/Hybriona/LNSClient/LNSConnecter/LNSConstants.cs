@@ -12,6 +12,7 @@ public class LNSConstants
     public const byte SERVER_EVT_UNLOCK_ROOM = 61;
     public const byte SERVER_EVT_RAW_DATA_NOCACHE = 62;
     public const byte SERVER_EVT_RAW_DATA_CACHE = 63;
+    public const byte SERVER_EVT_RAW_DATA_TO_CLIENT = 64;
 
 
 

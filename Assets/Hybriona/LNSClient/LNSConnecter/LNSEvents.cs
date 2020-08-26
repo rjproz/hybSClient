@@ -14,6 +14,6 @@ public delegate void OnRoomCreateFailed(ROOM_FAILURE_CODE code);
 public delegate void OnRoomJoinFailed(ROOM_FAILURE_CODE code);
 public delegate void OnRoomRejoinFailed(ROOM_FAILURE_CODE code);
 
-public delegate void OnMasterClientUpdated(string clientId);
+public delegate void OnMasterClientUpdated(LNSClient client);
 public delegate void OnPlayerConnected(LNSClient client);
 public delegate void OnPlayerDisconnected(LNSClient client);

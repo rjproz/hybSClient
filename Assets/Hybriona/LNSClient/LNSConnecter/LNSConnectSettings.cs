@@ -16,11 +16,8 @@ public class LNSConnectSettings
         RuntimePlatform runtimePlatform = Application.platform;
 
 
-        if(runtimePlatform == RuntimePlatform.OSXEditor || runtimePlatform == RuntimePlatform.WindowsEditor || runtimePlatform == RuntimePlatform.LinuxEditor)
-        {
-            platform = (byte)CLIENT_PLATFORM.UNITY_EDITOR;
-        }
-        else if(runtimePlatform == RuntimePlatform.WindowsPlayer )
+        
+        if(runtimePlatform == RuntimePlatform.WindowsPlayer )
         {
             platform = (byte)CLIENT_PLATFORM.DESKTOP_WINDOWS;
         }
@@ -41,7 +38,10 @@ public class LNSConnectSettings
             platform = (byte)CLIENT_PLATFORM.IOS;
         }
 
-        
+#if UNITY_EDITOR
+        platform = (byte)CLIENT_PLATFORM.UNITY_EDITOR;
+#endif
+
         if (string.IsNullOrEmpty(gameKey))
         {
             gameKey = Application.identifier;
