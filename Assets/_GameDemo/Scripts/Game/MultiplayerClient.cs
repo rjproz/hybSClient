@@ -77,7 +77,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
         
     }
 
-    public void OnEventRaised(LNSClient from,int eventID, LNSReader reader, DeliveryMethod deliveryMethod)
+    public void OnEventRaised(LNSClient from,ushort eventID, LNSReader reader, DeliveryMethod deliveryMethod)
     {
         if (eventID == 0)
         {
@@ -90,6 +90,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
             rot = reader.GetQuaternion();
             long timestamp = reader.GetLong();
 
+            //Debug.Log(timestamp);
             float delay = (float)(System.DateTime.UtcNow - System.DateTime.FromFileTimeUtc(timestamp)).TotalMilliseconds;
             if (delay > 400)
             {
@@ -178,6 +179,8 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
                 writer.Put("HELLO");
                 writer.Put(player.transform.position);
                 writer.Put(player.transform.rotation);
+
+                Debug.Log( (float)(System.DateTime.UtcNow - new System.DateTime(2020,8 , 25)).TotalSeconds);
                 writer.Put(System.DateTime.Now.ToFileTimeUtc());
                 connector.RaiseEvent(0,writer, DeliveryMethod.Unreliable);
             }

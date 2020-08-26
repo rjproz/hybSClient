@@ -373,7 +373,7 @@ public class LNSConnector
 
 
 
-    public bool RaiseEvent(int eventID,LNSWriter m_writer, DeliveryMethod deliveryMethod)
+    public bool RaiseEvent(ushort eventID,LNSWriter m_writer, DeliveryMethod deliveryMethod)
     {
         if (isConnected && isInActiveRoom)
         {
@@ -565,7 +565,7 @@ public class LNSConnector
                     
                     if (dataReceiver != null)
                     {
-                        int eventCode = packetReader.GetInt();
+                        ushort eventCode = packetReader.GetUShort();
                         LNSReader reader = LNSReader.GetFromPool();
 
                        
