@@ -431,29 +431,72 @@ public class LNSConnector
         return false;
     }
 
-    public bool RaiseEventOnAllAndCache(ushort eventCode, LNSWriter m_writer)
-    {
-        if (isConnected && isInActiveRoom)
-        {
+    //public bool RaiseEventOnAllAndCache(ushort eventCode, LNSWriter m_writer)
+    //{
+    //    if (isConnected && isInActiveRoom)
+    //    {
 
-            new Thread(() =>
-            {
-                lock (thelock)
-                {
-                    writer.Reset();
-                    writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_CACHE);
-                    writer.Put(eventCode);
-                    writer.Put(m_writer.Data);
-                    client.SendToAll(writer,DeliveryMethod.ReliableOrdered);
-                }
-            }).Start();
-            return true;
-        }
-        return false;
-    }
+    //        new Thread(() =>
+    //        {
+    //            lock (thelock)
+    //            {
+    //                writer.Reset();
+    //                writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_CACHE);
+    //                writer.Put(eventCode);
+    //                writer.Put(m_writer.Data);
+    //                client.SendToAll(writer,DeliveryMethod.ReliableOrdered);
+    //            }
+    //        }).Start();
+    //        return true;
+    //    }
+    //    return false;
+    //}
+
+    //public bool RaiseEventRemoveMyCache()
+    //{
+    //    if (isConnected && isInActiveRoom)
+    //    {
+
+    //        new Thread(() =>
+    //        {
+    //            lock (thelock)
+    //            {
+    //                //writer.Reset();
+    //                //writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_CACHE);
+    //                //writer.Put(eventCode);
+    //                //writer.Put(m_writer.Data);
+    //                //client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+    //            }
+    //        }).Start();
+    //        return true;
+    //    }
+    //    return false;
+    //}
+
+    //public bool RaiseEventRemoveAllCache()
+    //{
+    //    if (isConnected && isInActiveRoom && isLocalPlayerMasterClient)
+    //    {
+
+    //        new Thread(() =>
+    //        {
+    //            lock (thelock)
+    //            {
+    //                writer.Reset();
+    //                writer.Put(LNSConstants.SERVER_EVT_REMOVE_ALL_CACHE);
+    //                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+    //                //writer.Put(eventCode);
+    //                //writer.Put(m_writer.Data);
+
+    //            }
+    //        }).Start();
+    //        return true;
+    //    }
+    //    return false;
+    //}
 
 
-   
+
 
     public bool RaiseEventOnClient(LNSClient client, ushort eventCode, LNSWriter m_writer, DeliveryMethod deliveryMethod)
     {
