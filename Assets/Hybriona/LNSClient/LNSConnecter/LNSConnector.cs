@@ -42,6 +42,7 @@ public class LNSConnector
     private NetPeer peer;
     private NetDataWriter writer;
 
+
     private object thelock = new object();
 
 
@@ -372,7 +373,7 @@ public class LNSConnector
 
 
 
-    public bool RaiseEvent(int eventID,NetDataWriter m_writer, DeliveryMethod deliveryMethod)
+    public bool RaiseEvent(int eventID,LNSWriter m_writer, DeliveryMethod deliveryMethod)
     {
         if (isConnected && isInActiveRoom)
         {
@@ -421,9 +422,9 @@ public class LNSConnector
     }
 
 
-    private void Listener_NetworkReceiveEvent(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
+    private void Listener_NetworkReceiveEvent(NetPeer peer, NetPacketReader packetReader, DeliveryMethod deliveryMethod)
     {
-        byte clientInstruction = reader.GetByte();
+        byte clientInstruction = packetReader.GetByte();
         if(clientInstruction == LNSConstants.CLIENT_EVT_ROOM_CREATED)
         {
             isInActiveRoom = true;
@@ -441,7 +442,7 @@ public class LNSConnector
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_FAILED_CREATE)
         {
-            byte reason = reader.GetByte();
+            byte reason = packetReader.GetByte();
             if (onRoomCreateFailed != null)
             {
                 threadDispatcher.Add(() => onRoomCreateFailed((ROOM_FAILURE_CODE) reason));
@@ -449,7 +450,7 @@ public class LNSConnector
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_FAILED_JOIN)
         {
-            byte reason = reader.GetByte();
+            byte reason = packetReader.GetByte();
             if (onRoomJoinFailed != null)
             {
                 threadDispatcher.Add(() => onRoomJoinFailed((ROOM_FAILURE_CODE) reason));
@@ -457,7 +458,7 @@ public class LNSConnector
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_FAILED_REJOIN)
         {
-            byte reason = reader.GetByte();
+            byte reason = packetReader.GetByte();
             if (onRoomRejoinFailed != null)
             {
                 threadDispatcher.Add(() => onRoomRejoinFailed((ROOM_FAILURE_CODE)reason));
@@ -481,7 +482,7 @@ public class LNSConnector
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_MASTERCLIENT_CHANGED)
         {
-            string masterclientid = reader.GetString();
+            string masterclientid = packetReader.GetString();
             isLocalPlayerMasterClient = (masterclientid == id);
           
             if(onMasterClientUpdated != null)
@@ -495,10 +496,10 @@ public class LNSConnector
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_PLAYER_CONNECTED)
         {
-            string client_id = reader.GetString();
-            string client_displayName = reader.GetString();
-            string client_version = reader.GetString();
-            CLIENT_PLATFORM client_platform = (CLIENT_PLATFORM) reader.GetByte();
+            string client_id = packetReader.GetString();
+            string client_displayName = packetReader.GetString();
+            string client_version = packetReader.GetString();
+            CLIENT_PLATFORM client_platform = (CLIENT_PLATFORM) packetReader.GetByte();
 
             LNSClient client = null;
             for(int i=0;i<clients.Count;i++)
@@ -534,7 +535,7 @@ public class LNSConnector
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_PLAYER_DISCONNECTED)
         {
-            string client_id = reader.GetString();
+            string client_id = packetReader.GetString();
             
             for (int i = 0; i < clients.Count; i++)
             {
@@ -555,36 +556,46 @@ public class LNSConnector
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_RAW)
         {
-            string fromid = reader.GetString();
-            
+            string fromid = packetReader.GetString();
+
             for (int i = 0; i < clients.Count; i++)
             {
                 if(fromid == clients[i].id)
                 {
+                    
                     if (dataReceiver != null)
                     {
+                        int eventCode = packetReader.GetInt();
+                        LNSReader reader = LNSReader.GetFromPool();
+
+                       
+                        LNSClient fromClient = clients[i];
                         DeliveryMethod _deliveryMethod = deliveryMethod;
+
+                        reader.SetSource(packetReader.GetRemainingBytes());
+
                         threadDispatcher.Add(() =>
                         {
                             try
                             {
-                                dataReceiver.OnEventRaised(clients[i],reader.GetInt(), reader, _deliveryMethod);
+                                dataReceiver.OnEventRaised(fromClient, eventCode, reader, _deliveryMethod);
                             }
-                            catch { }
+                            catch(System.Exception ex) {
+                                Debug.LogError(ex.Message + " "+ex.StackTrace);
+                            }
                             reader.Recycle();
+
+
                         });
 
-                        return;
+                       
                     }
-                    else
-                    {
-                        break;
-                    }
+                    break;
                 }
             }
           
         }
-        reader.Recycle();
+        packetReader.Recycle();
     }
 
     public void DispatchToMainThread(System.Action action)

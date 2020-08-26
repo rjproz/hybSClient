@@ -13,7 +13,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
 
     public LNSConnector connector;
     private string id;
-    private NetDataWriter writer;
+    private LNSWriter writer;
 
     private Color color;
 
@@ -46,7 +46,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
         connector.id = this.id;
         if (writer == null)
         {
-            writer = new NetDataWriter();
+            writer = new LNSWriter();
         }
         writer.Reset();
 
@@ -77,7 +77,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
         
     }
 
-    public void OnEventRaised(LNSClient from,int eventID, NetPacketReader reader, DeliveryMethod deliveryMethod)
+    public void OnEventRaised(LNSClient from,int eventID, LNSReader reader, DeliveryMethod deliveryMethod)
     {
         if (eventID == 0)
         {
@@ -85,19 +85,11 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
             Vector3 pos = Vector3.zero;
             Quaternion rot = Quaternion.identity;
 
-           
-
-            pos.x = reader.GetFloat();
-            pos.y = reader.GetFloat();
-            pos.z = reader.GetFloat();
-
-
-            rot.x = reader.GetFloat();
-            rot.y = reader.GetFloat();
-            rot.z = reader.GetFloat();
-            rot.w = reader.GetFloat();
-
+            reader.GetString();
+            pos = reader.GetVector3();
+            rot = reader.GetQuaternion();
             long timestamp = reader.GetLong();
+
             float delay = (float)(System.DateTime.UtcNow - System.DateTime.FromFileTimeUtc(timestamp)).TotalMilliseconds;
             if (delay > 400)
             {
@@ -151,7 +143,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
 
         GameObject o = Instantiate(clonePrefab);
         o.GetComponent<Clone>().SetColor(color);
-        o.name = client.displayName;
+        o.name = client.id +"_"+client.displayName;
 
         others.Add(id, o.GetComponent<Clone>());
 
@@ -183,16 +175,9 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
             {
                 timeupdated = Time.time;
                 writer.Reset();
-                
-                writer.Put(player.transform.position.x);
-                writer.Put(player.transform.position.y);
-                writer.Put(player.transform.position.z);
-
-                writer.Put(player.transform.rotation.x);
-                writer.Put(player.transform.rotation.y);
-                writer.Put(player.transform.rotation.z);
-                writer.Put(player.transform.rotation.w);
-
+                writer.Put("HELLO");
+                writer.Put(player.transform.position);
+                writer.Put(player.transform.rotation);
                 writer.Put(System.DateTime.Now.ToFileTimeUtc());
                 connector.RaiseEvent(0,writer, DeliveryMethod.Unreliable);
             }
