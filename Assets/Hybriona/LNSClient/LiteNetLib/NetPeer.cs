@@ -497,7 +497,7 @@ namespace LiteNetLib
         {
             if (_connectionState != ConnectionState.Connected || channelNumber >= _channels.Length)
                 return;
-
+            
             //Select channel
             PacketProperty property;
             BaseChannel channel = null;
@@ -511,6 +511,15 @@ namespace LiteNetLib
                 property = PacketProperty.Channeled;
                 channel = CreateChannel((byte)(channelNumber*4 + (byte)deliveryMethod));
             }
+
+
+            //NetDataReader netDataReader = new NetDataReader(data);
+            //ushort eventCode = netDataReader.GetUShort();
+            //if (eventCode == 10)
+            //{
+            //    UnityEngine.Debug.Log("DEVM : " + deliveryMethod);
+            //}
+
 
             //Prepare  
             NetDebug.Write("[RS]Packet: " + property);

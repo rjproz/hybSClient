@@ -75,6 +75,8 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
 
         */
     }
+
+
     public void Connect()
     {
         connector.Connect();
@@ -89,13 +91,12 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
             {
                 timeupdated = Time.time;
                 writer.Reset();
-                writer.Put(pos);
+                writer.Put(pos);// + new Vector3(Random.Range(-5,5),0, Random.Range(-5, 5)));
                 writer.Put(rot);
                 //writer.Put(System.DateTime.Now.ToFileTimeUtc());
                 connector.RaiseEventOnAll(1, writer, DeliveryMethod.Unreliable);
             }
 
-           
         }
     }
 
@@ -103,11 +104,32 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
     {
         if (connector.isConnected && connector.isInActiveRoom)
         {
+           
             writer.Reset();
             writer.Put(pos);
             writer.Put(rot);
             connector.RaiseEventOnAll(2, writer, DeliveryMethod.Unreliable);
            
+        }
+    }
+
+
+    public void SendAudio(byte[] data)
+    {
+        if (connector.isConnected && connector.isInActiveRoom)
+        {
+            //ushort packetid = (ushort)Random.Range(100, 999);
+            //writer.Reset();
+            //writer.Put(packetid);
+            //writer.Reset();
+            //writer.Put(data);
+            LNSWriter w = new LNSWriter();
+            w.Put(player.audioRecorder.frequency);
+            w.Put(player.audioRecorder.channels);
+            w.Put(data);
+          
+
+            connector.RaiseEventOnAll(10, w, DeliveryMethod.ReliableOrdered);
         }
     }
 
@@ -155,12 +177,19 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
             {
                 Vector3 pos = reader.GetVector3();
                 Quaternion rot = reader.GetQuaternion();
-                others[from.id].ShootBulletAt(pos,rot);
+                others[from.id].ShootBulletAt(pos, rot);
             }
         }
         else if (eventCode == 3)
         {
             player.transform.position += Vector3.up;
+        }
+        else if (eventCode == 10)
+        {
+            if (others.ContainsKey(from.id))
+            {
+                others[from.id].audioReceiver.Play(reader.GetInt(),reader.GetInt(),reader.GetRemainingBytes());
+            }
         }
     }   
 

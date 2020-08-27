@@ -5,8 +5,10 @@ using UnityEngine;
 public class MainPlayer : BasePlayer
 {
     // Start is called before the first frame update
+    
     public float moveSpeed = 1;
     public float rotateSpeed = 10;
+    public MainPlayerAudio audioRecorder;
     public Color color;
     private Rigidbody rigidbody;
     private void Start()
@@ -44,7 +46,15 @@ public class MainPlayer : BasePlayer
         }
 
         Globals.Instance.multiplayerClient.SendTransform(transform.position, transform.rotation);
-        if(Input.GetMouseButtonUp(0))
+
+        Globals.Instance.multiplayerClient.SendTransform(transform.position, transform.rotation);
+        if (audioRecorder.dataAvailable)
+        {
+            Globals.Instance.multiplayerClient.SendAudio(audioRecorder.GetData());
+        }
+
+
+        if (Input.GetMouseButtonUp(0))
         {
             Vector3 from = transform.position + transform.forward * .7f;
             Quaternion rot = transform.rotation;

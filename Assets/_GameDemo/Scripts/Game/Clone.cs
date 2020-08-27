@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Clone : BasePlayer
 {
-    
+    public CloneAudio audioReceiver;
     public void SetColor(Color color)
     {
         GetComponent<Renderer>().material.color = color;

@@ -72,8 +72,7 @@ public class LNSConnector
 
         EventBasedNetListener listener = new EventBasedNetListener();
         client = new NetManager(listener);
-
-
+       
 
         //Write Client Data
         clientDataWriter.Put(this.settings.serverSecurityKey);
@@ -150,6 +149,8 @@ public class LNSConnector
                     if(peer.ConnectionState == ConnectionState.Connected)
                     {
                         localClient.isConnected = isConnected = true;
+
+                        int size = peer.Mtu;// GetMaxSinglePacketSize(DeliveryMethod.Sequenced);
                         threadDispatcher.Add(() =>
                         {
                             if (onConnected != null)
@@ -237,6 +238,7 @@ public class LNSConnector
 
     public bool ReconnectAndRejoin(int retries = 20)
     {
+       
         if (!isConnected && !isInActiveRoom && WasConnectedToARoom())
         {
             //TODO Reconnect logic
@@ -444,12 +446,13 @@ public class LNSConnector
     }
 
 
+   
 
     public bool RaiseEventOnAll(ushort eventCode,LNSWriter m_writer, DeliveryMethod deliveryMethod)
     {
         if (isConnected && isInActiveRoom)
         {
-
+           
             new Thread(() =>
             {
                 lock (thelock)
@@ -458,14 +461,17 @@ public class LNSConnector
                     writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_NOCACHE);
                     writer.Put(eventCode);
                     writer.Put(m_writer.Data);
+
                     client.SendToAll(writer, deliveryMethod);
                 }
+                
             }).Start();
             return true;
         }
         return false;
     }
 
+   
     //public bool RaiseEventOnAllAndCache(ushort eventCode, LNSWriter m_writer)
     //{
     //    if (isConnected && isInActiveRoom)
