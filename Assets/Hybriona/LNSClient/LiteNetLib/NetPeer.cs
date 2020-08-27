@@ -520,7 +520,7 @@ namespace LiteNetLib
             //    UnityEngine.Debug.Log("DEVM : " + deliveryMethod);
             //}
 
-
+            //UnityEngine.Debug.Log("M : " + deliveryMethod + " "+length);
             //Prepare  
             NetDebug.Write("[RS]Packet: " + property);
 

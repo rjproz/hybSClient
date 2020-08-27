@@ -46,8 +46,6 @@ public class MainPlayer : BasePlayer
         }
 
         Globals.Instance.multiplayerClient.SendTransform(transform.position, transform.rotation);
-
-        Globals.Instance.multiplayerClient.SendTransform(transform.position, transform.rotation);
         if (audioRecorder.dataAvailable)
         {
             Globals.Instance.multiplayerClient.SendAudio(audioRecorder.GetData());

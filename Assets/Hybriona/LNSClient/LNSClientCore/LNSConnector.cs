@@ -307,7 +307,7 @@ public class LNSConnector
                 writer.Put(LNSConstants.SERVER_EVT_CREATE_ROOM);
                 writer.Put(roomid);
                 parameters.AppendToWriter(writer);
-                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+                peer.Send(writer, DeliveryMethod.ReliableOrdered);
             }
             return true;
         }
@@ -333,7 +333,7 @@ public class LNSConnector
                     writer.Put(password);
                 }
 
-                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+                peer.Send(writer, DeliveryMethod.ReliableOrdered);
             }
             return true;
         }
@@ -357,7 +357,7 @@ public class LNSConnector
                 {
                     filter.AppendToWriter(writer);
                 }
-                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+                peer.Send(writer, DeliveryMethod.ReliableOrdered);
             }
             return true;
         }
@@ -373,7 +373,7 @@ public class LNSConnector
                 writer.Reset();
                 writer.Put(LNSConstants.SERVER_EVT_REJOIN_ROOM);
                 writer.Put(roomid);
-                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+                peer.Send(writer, DeliveryMethod.ReliableOrdered);
             }
             return true;
         }
@@ -390,7 +390,7 @@ public class LNSConnector
                 writer.Put(LNSConstants.SERVER_EVT_REJOIN_ROOM);
                 writer.Put(_lastConnectedRoom);
 
-                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+                peer.Send(writer, DeliveryMethod.ReliableOrdered);
             }
             return true;
         }
@@ -408,7 +408,7 @@ public class LNSConnector
                 //WritePlayerData(writer);
                 writer.Put(roomid);
                 writer.Put(maxPlayers);
-                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+                peer.Send(writer, DeliveryMethod.ReliableOrdered);
             }
             return true;
         }
@@ -423,7 +423,7 @@ public class LNSConnector
             {
                 writer.Reset();
                 writer.Put(LNSConstants.SERVER_EVT_LOCK_ROOM);
-                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+                peer.Send(writer, DeliveryMethod.ReliableOrdered);
             }
             return true;
         }
@@ -438,7 +438,7 @@ public class LNSConnector
             {
                 writer.Reset();
                 writer.Put(LNSConstants.SERVER_EVT_UNLOCK_ROOM);
-                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+                peer.Send(writer, DeliveryMethod.ReliableOrdered);
             }
             return true;
         }
@@ -452,17 +452,19 @@ public class LNSConnector
     {
         if (isConnected && isInActiveRoom)
         {
-           
+
+            writer.Reset();
+            writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_NOCACHE);
+            writer.Put(eventCode);
+            writer.Put(m_writer.Data,0,m_writer.Length);
+
+            peer.Send(writer, deliveryMethod);
+
             new Thread(() =>
             {
                 lock (thelock)
                 {
-                    writer.Reset();
-                    writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_NOCACHE);
-                    writer.Put(eventCode);
-                    writer.Put(m_writer.Data);
-
-                    client.SendToAll(writer, deliveryMethod);
+                   
                 }
                 
             }).Start();
@@ -485,7 +487,7 @@ public class LNSConnector
     //                writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_CACHE);
     //                writer.Put(eventCode);
     //                writer.Put(m_writer.Data);
-    //                client.SendToAll(writer,DeliveryMethod.ReliableOrdered);
+    //                peer.Send(writer,DeliveryMethod.ReliableOrdered);
     //            }
     //        }).Start();
     //        return true;
@@ -506,7 +508,7 @@ public class LNSConnector
     //                //writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_CACHE);
     //                //writer.Put(eventCode);
     //                //writer.Put(m_writer.Data);
-    //                //client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+    //                //peer.Send(writer, DeliveryMethod.ReliableOrdered);
     //            }
     //        }).Start();
     //        return true;
@@ -525,7 +527,7 @@ public class LNSConnector
     //            {
     //                writer.Reset();
     //                writer.Put(LNSConstants.SERVER_EVT_REMOVE_ALL_CACHE);
-    //                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+    //                peer.Send(writer, DeliveryMethod.ReliableOrdered);
     //                //writer.Put(eventCode);
     //                //writer.Put(m_writer.Data);
 
@@ -570,7 +572,8 @@ public class LNSConnector
                     {
                         writer.Put(m_writer.Data);
                     }
-                    client.SendToAll(writer, deliveryMethod);
+                    peer.Send(writer, deliveryMethod);
+                    //peer.Send(writer, deliveryMethod);
                 }
             }).Start();
             return true;
@@ -589,7 +592,7 @@ public class LNSConnector
             {
                 writer.Reset();
                 writer.Put(LNSConstants.SERVER_EVT_LEAVE_ROOM);
-                client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+                peer.Send(writer, DeliveryMethod.ReliableOrdered);
             }
            
         }

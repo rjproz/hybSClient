@@ -35,7 +35,7 @@ public class MainPlayerAudio : MonoBehaviour
 
         AudioClip clip = Microphone.Start(deviceName, true, 100, frequency);
         channels = clip.channels;
-        float[] samples = new float[100000];
+        float[] samples = new float[1000000];
         while (true)
         {
             int pos = Microphone.GetPosition(deviceName);
@@ -55,13 +55,13 @@ public class MainPlayerAudio : MonoBehaviour
                 }
 
                 rawData = Compress(samplesCompressed);
-                Debug.Log(rawData.Length);
+  
                 dataAvailable = true;
 
 
             }
             lastSample = pos;
-            yield return new WaitForSeconds(1f);
+            yield return new WaitForSeconds(5f);
         }
     }
 
