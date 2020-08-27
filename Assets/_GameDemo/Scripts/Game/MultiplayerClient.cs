@@ -6,8 +6,9 @@ using UnityEngine;
 
 public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
 {
-    public Transform player;
+    public MainPlayer player;
     public GameObject clonePrefab;
+    public bool connectToLocalServer = false;
     public int ping;
     private Dictionary<string, Clone> others = new Dictionary<string, Clone>();
 
@@ -15,29 +16,32 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
     private string id;
     private LNSWriter writer;
 
-    private Color color;
 
     public void Initialize(string id)
     {
-        player.position = new Vector3(Random.Range(-50, 50), .5f, Random.Range(-50, 50));
 
-        color.r = Random.value;
-        color.g = Random.value;
-        color.b = Random.value;
 
         this.id = id;
 
-        player.GetComponent<Renderer>().material.color = color;
+        LNSClientParameters clientParameters = new LNSClientParameters(this.id,null);
+
 
         LNSConnectSettings settings = new LNSConnectSettings();
         settings.gameKey = "com.hybriona.multiplayertest";
         settings.gameVersion = Application.version;
-        settings.serverIp = "45.55.33.88";
+        if (connectToLocalServer)
+        {
+            settings.serverIp = "127.0.0.1";
+        }
+        else
+        {
+            settings.serverIp = "45.55.33.88";
+        }
         settings.serverPort = 10002;
         settings.serverSecurityKey = "iamatestserver";
 
         //settings.serverIp = "192.168.0.100";
-        connector = new LNSConnector(settings,this);
+        connector = new LNSConnector(clientParameters,settings, this);
         connector.SetClientId(this.id);
         if (writer == null)
         {
@@ -77,15 +81,55 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
         
     }
 
+    public void SendTransform(Vector3 pos,Quaternion rot)
+    {
+        if (connector.isConnected && connector.isInActiveRoom)
+        {
+            if (Time.time - timeupdated > .1f)
+            {
+                timeupdated = Time.time;
+                writer.Reset();
+                writer.Put(pos);
+                writer.Put(rot);
+                //writer.Put(System.DateTime.Now.ToFileTimeUtc());
+                connector.RaiseEventOnAll(1, writer, DeliveryMethod.Unreliable);
+            }
+
+           
+        }
+    }
+
+    public void SendBulletInvoke(Vector3 pos,Quaternion rot)
+    {
+        if (connector.isConnected && connector.isInActiveRoom)
+        {
+            writer.Reset();
+            writer.Put(pos);
+            writer.Put(rot);
+            connector.RaiseEventOnAll(2, writer, DeliveryMethod.Unreliable);
+           
+        }
+    }
+
     public void OnEventRaised(LNSClient from,ushort eventCode, LNSReader reader, DeliveryMethod deliveryMethod)
     {
-        if(eventCode == 0)
+        if (eventCode == 0)
         {
-            Color color = reader.GetColor();      
-            GameObject o = Instantiate(clonePrefab);
-            o.GetComponent<Clone>().SetColor(color);
-            o.name = from.id + "_" + from.displayName;
-            others.Add(from.id, o.GetComponent<Clone>());
+            Color color = reader.GetColor();
+            if (others.ContainsKey(from.id))
+            {
+                Clone o = others[from.id];
+                o.GetComponent<Clone>().SetColor(color);
+                o.gameObject.name = from.id + "_" + from.displayName;
+            }
+            else
+            {
+
+                GameObject o = Instantiate(clonePrefab);
+                o.GetComponent<Clone>().SetColor(color);
+                o.name = from.id + "_" + from.displayName;
+                others.Add(from.id, o.GetComponent<Clone>());
+            }
         }
         else if (eventCode == 1)
         {
@@ -105,7 +149,16 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
                 others[playerid].SetTarget(pos, rot);
             }
         }
-        else if(eventCode == 2)
+        else if (eventCode == 2)
+        {
+            if (others.ContainsKey(from.id))
+            {
+                Vector3 pos = reader.GetVector3();
+                Quaternion rot = reader.GetQuaternion();
+                others[from.id].ShootBulletAt(pos,rot);
+            }
+        }
+        else if (eventCode == 3)
         {
             player.transform.position += Vector3.up;
         }
@@ -123,31 +176,14 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
         Debug.LogFormat("OnPlayerConnected {0} {1} {2}",client.id,client.displayName,client.platform.ToString());
 
         writer.Reset();
-        writer.Put(color);
+        writer.Put(player.color);
         connector.RaiseEventOnClient(client, 0, writer, DeliveryMethod.ReliableOrdered);
     }
 
     float timeupdated;
     private void Update()
     {
-        if (connector.isConnected && connector.isInActiveRoom)
-        {
-            if (Time.time - timeupdated > .1f)
-            {
-                timeupdated = Time.time;
-                writer.Reset();
-                writer.Put(player.transform.position);
-                writer.Put(player.transform.rotation);        
-                //writer.Put(System.DateTime.Now.ToFileTimeUtc());
-                connector.RaiseEventOnAll(1,writer, DeliveryMethod.Unreliable);
-            }
-
-            if(Input.GetKeyUp(KeyCode.Space))
-            {
-                writer.Reset();
-                connector.RaiseEventOnMasterClient(2, writer, DeliveryMethod.ReliableUnordered);
-            }
-        }
+       
         ping = connector.GetPing();
     }
 

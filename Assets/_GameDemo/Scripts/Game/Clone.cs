@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Clone : MonoBehaviour
+public class Clone : BasePlayer
 {
     
     public void SetColor(Color color)
@@ -16,11 +16,15 @@ public class Clone : MonoBehaviour
     {
         tpos = pos;
         trot = rot;
+
+        //transform.position = tpos;
+        //transform.rotation = trot;
     }
 
 
     private void Update()
     {
+        
         transform.position = Vector3.Lerp(transform.position, tpos, Time.deltaTime * 10f);
         transform.rotation = Quaternion.Lerp(transform.rotation, trot, Time.deltaTime * 5f);
     }

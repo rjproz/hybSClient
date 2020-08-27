@@ -79,7 +79,13 @@ public class ConnectUI : BaseUI
 
         Processing();
         Globals.Instance.multiplayerClient.connector.SetDisplayName(userNameText.text);
-        Globals.Instance.multiplayerClient.connector.CreateRoom(roomIdText.text,true, passwordText.text);
+        LNSCreateRoomParameters roomparams = new LNSCreateRoomParameters();
+        roomparams.isPublic = true;
+        roomparams.password = passwordText.text;
+
+        roomparams.filters = new LNSJoinRoomFilter();
+        roomparams.filters.Set(RoomFilters.MAP_KEY, RoomFilters.MAP_VALUE_MIRAGE);
+        Globals.Instance.multiplayerClient.connector.CreateRoom(roomIdText.text, roomparams);
     }
 
     public void OnJoinRoomClicked()
@@ -87,5 +93,15 @@ public class ConnectUI : BaseUI
         Processing();
         Globals.Instance.multiplayerClient.connector.SetDisplayName(userNameText.text);
         Globals.Instance.multiplayerClient.connector.JoinRoom(roomIdText.text, passwordText.text);
+    }
+
+    public void OnJoinRandomClicked()
+    {
+        Processing();
+        Globals.Instance.multiplayerClient.connector.SetDisplayName(userNameText.text);
+
+        LNSJoinRoomFilter filter = new LNSJoinRoomFilter();
+        filter.Set(RoomFilters.MAP_KEY, RoomFilters.MAP_VALUE_MIRAGE);
+        Globals.Instance.multiplayerClient.connector.JoinRandomRoom(filter);
     }
 }
