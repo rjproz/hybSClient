@@ -51,10 +51,8 @@ public class AudioReceiver : MonoBehaviour
 
         //Debug.Log("MAX " + max);
         audioSource.Stop();
-        if (!audioSource.isPlaying)
-        {
-            audioSource.Play();
-        }
+        audioSource.Play();
+       
 
     }
 
