@@ -28,11 +28,11 @@ public class AudioRecorder : MonoBehaviour
 
     private IEnumerator RecordCycle()
     {
-        int freq = 10000;
+        int freq = 50000;
         
         clip = Microphone.Start(deviceName, true, 100, freq);
         
-        float[] samples = new float[100000];
+        float[] samples = new float[10000000];
         while (true)
         {
             int pos = Microphone.GetPosition(deviceName);

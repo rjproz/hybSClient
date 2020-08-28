@@ -61,7 +61,7 @@ public class MainPlayerAudio : MonoBehaviour
 
             }
             lastSample = pos;
-            yield return new WaitForSeconds(5f);
+            yield return new WaitForSeconds(1f);
         }
     }
 
