@@ -19,6 +19,10 @@ public class CloneAudio : MonoBehaviour
 
     public void Play(int freq, int channels, byte[] samplesCompressed)
     {
+        //while(audioSource.isPlaying)
+        //{
+            
+        //}
         //Debug.Log(samplesCompressed.Length + " bytes");
         samplesCompressed = Decompress(samplesCompressed);
         if (clip == null)
