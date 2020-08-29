@@ -13,7 +13,6 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
     private Dictionary<string, Clone> others = new Dictionary<string, Clone>();
 
     public LNSConnector connector;
-    private string id;
     private LNSWriter writer;
 
 
@@ -22,9 +21,9 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
     {
 
 
-        this.id = id;
 
-        LNSClientParameters clientParameters = new LNSClientParameters(this.id,null);
+
+        LNSClientParameters clientParameters = new LNSClientParameters(id,System.Environment.UserName);
 
 
         LNSConnectSettings settings = new LNSConnectSettings();
@@ -43,7 +42,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
 
         //settings.serverIp = "192.168.0.100";
         connector = new LNSConnector(clientParameters,settings, this);
-        connector.SetClientId(this.id);
+       
         if (writer == null)
         {
             writer = new LNSWriter();
@@ -196,7 +195,11 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
     private void OnPlayerDisconnected(LNSClient client)
     {
         Debug.Log("OnPlayerDisconnected " + client.id);
-
+        if(others.ContainsKey(client.id))
+        {
+            GameObject.Destroy( others[client.id].gameObject);
+            others.Remove(client.id);
+        }
      
     }
 

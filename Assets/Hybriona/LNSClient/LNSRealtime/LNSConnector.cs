@@ -29,6 +29,7 @@ public class LNSConnector
     public OnRoomCreateFailed onRoomCreateFailed;
     public OnRoomJoinFailed onRoomJoinFailed;
     public OnRoomRejoinFailed onRoomRejoinFailed;
+    public OnRandomRoomJoinFailed onRandomRoomJoinFailed;
 
     public OnMasterClientUpdated onMasterClientUpdated;
     public OnPlayerConnected onPlayerConnected;
@@ -71,8 +72,13 @@ public class LNSConnector
         this.settings.Validate();
 
         EventBasedNetListener listener = new EventBasedNetListener();
+       
+
+
         client = new NetManager(listener);
        
+
+
 
         //Write Client Data
         clientDataWriter.Put(this.settings.serverSecurityKey);
@@ -84,10 +90,16 @@ public class LNSConnector
 
 
         //List to receiveEvent
+        listener.PeerConnectedEvent += Listener_PeerConnectedEvent;
+        listener.PeerDisconnectedEvent += Listener_PeerDisconnectedEvent;
         listener.NetworkReceiveEvent += Listener_NetworkReceiveEvent;
-        
+       
+        listener.NetworkErrorEvent += Listener_NetworkErrorEvent;
+        listener.NetworkReceiveUnconnectedEvent += Listener_NetworkReceiveUnconnectedEvent;
+
     }
 
+    
     public bool SetClientId(string id)
     {
         if (!isConnected)
@@ -131,85 +143,30 @@ public class LNSConnector
         _lastconnectedPort = port;
         new Thread(() =>
         {
-            bool connectionFailed = false;
-            
-            
+          
             client.Start();
-            try
-            {
-                peer =  client.Connect(ip, port, clientDataWriter);
-                
-                if (peer != null )
-                {
-                    while(peer.ConnectionState == ConnectionState.Outgoing)
-                    {
-                        Thread.Sleep(10);
-                    }
-
-                    if(peer.ConnectionState == ConnectionState.Connected)
-                    {
-                        localClient.isConnected = isConnected = true;
-
-                        int size = peer.Mtu;// GetMaxSinglePacketSize(DeliveryMethod.Sequenced);
-                        threadDispatcher.Add(() =>
-                        {
-                            if (onConnected != null)
-                            {
-                                onConnected();
-                            }
-                        });
-                       
-                    }
-                    else
-                    {
-                       connectionFailed = true;
-                       
-                    }
-                   
-                }
-                else
-                {
-                    connectionFailed = false;
-                }
-            }
-            catch
-            {
-                connectionFailed = false;
-                
-            }
-            
-            if(connectionFailed)
-            {
-                localClient.isConnected = isConnected = false;
-                threadDispatcher.Add(() =>
-                {
-                    if (onFailedToConnect != null)
-                    {
-                        onFailedToConnect();
-                    }
-                });
-                return;
-            }
-
-
-
-
             Update();
-
-
-
+            peer = client.Connect(ip, port, clientDataWriter);
 
 
         }).Start();
-        return false;
+        return true;
     }
 
     protected void Update()
     {
+        if(client.IsRunning)
         new Thread(() =>
         {
+            while (true)
+            {
+                client.PollEvents();
+                Thread.Sleep(15);
+            }
+            /*
             while (isConnected)
             {
+                
                 if (peer.ConnectionState == ConnectionState.Disconnected)
                 {
                     threadDispatcher.Add(() =>
@@ -231,10 +188,19 @@ public class LNSConnector
                 Thread.Sleep(15);
             }
             client.Stop();
+            */
         }).Start();
 
     }
 
+    //public LNSClient FindRemoteClient(string clientid)
+    //{
+    //    for(int i=0;i<client.co)
+    //}
+    //public LNSClient FindRemoteClient(int clientNetId)
+    //{
+
+    //}
 
     public bool ReconnectAndRejoin(int retries = 20)
     {
@@ -246,11 +212,7 @@ public class LNSConnector
             {
                 for (int i = 0; i < retries; i++)
                 {
-                    try
-                    {
-                        client.Start();
-                    }
-                    catch { }
+                  
 
                     Debug.Log("Reconnecting: Begin");
                     client.Flush();
@@ -612,7 +574,9 @@ public class LNSConnector
     private void Listener_NetworkReceiveEvent(NetPeer peer, NetPacketReader packetReader, DeliveryMethod deliveryMethod)
     {
         byte clientInstruction = packetReader.GetByte();
-        if(clientInstruction == LNSConstants.CLIENT_EVT_ROOM_CREATED)
+        
+
+        if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_CREATED)
         {
             isInActiveRoom = true;
             _lastConnectedRoom = packetReader.GetString();
@@ -673,6 +637,14 @@ public class LNSConnector
                 threadDispatcher.Add(() => onRoomRejoined());
             }
         }
+        else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_FAILED_RANDOM_JOIN)
+        {
+            isInActiveRoom = false;
+            if (onRandomRoomJoinFailed != null)
+            {
+                threadDispatcher.Add(() => onRandomRoomJoinFailed());
+            }
+        }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_MASTERCLIENT_CHANGED)
         {
             _lastConnectedRoomMasterClient = packetReader.GetString();
@@ -720,7 +692,7 @@ public class LNSConnector
             string client_id = packetReader.GetString();
             string client_displayName = packetReader.GetString();
             CLIENT_PLATFORM client_platform = (CLIENT_PLATFORM) packetReader.GetByte();
-
+            int  client_netID = packetReader.GetInt();
             LNSClient client = null;
             for(int i=0;i<clients.Count;i++)
             {
@@ -729,6 +701,7 @@ public class LNSConnector
                     client = clients[i];
                     client.displayName = client_displayName;
                     client.platform = client_platform;
+                    client.networkID = client_netID;
                     break;
                 }
             }
@@ -739,6 +712,7 @@ public class LNSConnector
                 client.id = client_id;
                 client.displayName = client_displayName;
                 client.platform = client_platform;
+                client.networkID = client_netID;
 
                 clients.Add(client);
             }
@@ -816,6 +790,116 @@ public class LNSConnector
         }
         packetReader.Recycle();
     }
+
+    private void Listener_PeerDisconnectedEvent(NetPeer peer, DisconnectInfo disconnectInfo)
+    {
+        bool wasConnected = isConnected;
+        localClient.isConnected = isConnected = isInActiveRoom = false;
+        if (wasConnected)
+        {
+            if(onDisconnected != null)
+            {
+                DispatchToMainThread(() =>
+                {
+                    onDisconnected();
+                   
+                });
+                
+            }
+        }
+       
+        else if (onFailedToConnect != null)
+        {
+            try
+            {
+                //Debug.LogError(disconnectInfo.Reason);
+                if (disconnectInfo.Reason == DisconnectReason.ConnectionRejected)
+                {
+                    byte ins = disconnectInfo.AdditionalData.GetByte();
+                    if (ins == LNSConstants.CLIENT_EVT_SERVER_EXECEPTION)
+                    {
+
+                        DispatchToMainThread(() =>
+                        {
+                            onFailedToConnect(CONNECTION_FAILURE_CODE.SERVER_EXECPTION);
+                        });
+                    }
+                    if (ins == LNSConstants.CLIENT_EVT_UNAUTHORIZED_CONNECTION)
+                    {
+
+                        DispatchToMainThread(() =>
+                        {
+                            onFailedToConnect(CONNECTION_FAILURE_CODE.CONNECTION_IS_NOT_AUTHORIZED);
+                        });
+                    }
+                    else if (ins == LNSConstants.CLIENT_EVT_UNAUTHORIZED_GAME)
+                    {
+
+                        DispatchToMainThread(() =>
+                        {
+                            onFailedToConnect(CONNECTION_FAILURE_CODE.GAME_IS_NOT_AUTHORIZED);
+                        });
+                    }
+                    else if (ins == LNSConstants.CLIENT_EVT_USER_ALREADY_CONNECTED)
+                    {
+
+                        DispatchToMainThread(() =>
+                        {
+                            onFailedToConnect(CONNECTION_FAILURE_CODE.USER_IS_ALREADY_CONNECTED);
+                        });
+                    }
+                    else
+                    {
+                        DispatchToMainThread(() =>
+                        {
+                            onFailedToConnect(CONNECTION_FAILURE_CODE.UNKNOWN_ERROR);
+                        });
+                    }
+                }
+                else
+                {
+                    DispatchToMainThread(() =>
+                    {
+                        onFailedToConnect(CONNECTION_FAILURE_CODE.COULD_NOT_CONNECT_TO_HOST);
+                    });
+                }
+                
+
+            }
+            catch(System.Exception ex)
+            {
+                
+                DispatchToMainThread(() =>
+                {
+                    onFailedToConnect();
+                });
+            }
+        }
+       
+    }
+
+    private void Listener_PeerConnectedEvent(NetPeer peer)
+    {
+        localClient.isConnected = isConnected = true;
+        if(onConnected != null)
+        {
+            DispatchToMainThread(() =>
+            {
+                onConnected();
+            });
+        }
+    }
+
+    private void Listener_NetworkReceiveUnconnectedEvent(System.Net.IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
+    {
+        Debug.Log("unconnected event");
+    }
+
+    private void Listener_NetworkErrorEvent(System.Net.IPEndPoint endPoint, System.Net.Sockets.SocketError socketError)
+    {
+        Debug.Log("Listener_NetworkErrorEvent");
+    }
+
 
     public void DispatchToMainThread(System.Action action)
     {

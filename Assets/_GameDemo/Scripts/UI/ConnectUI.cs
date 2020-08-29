@@ -26,7 +26,15 @@ public class ConnectUI : BaseUI
         Globals.Instance.multiplayerClient.connector.onRoomCreateFailed = OnRoomCreateFailed;
         Globals.Instance.multiplayerClient.connector.onRoomJoined = OnRoomJoined;
         Globals.Instance.multiplayerClient.connector.onRoomJoinFailed = OnRoomJoinFailed;
+        Globals.Instance.multiplayerClient.connector.onRandomRoomJoinFailed = OnRandomRoomJoinFailed;
     }
+
+    private void OnRandomRoomJoinFailed()
+    {
+ 
+        EnableInput("No free rooms at the moment");
+    }
+
 
     private void OnRoomJoinFailed(ROOM_FAILURE_CODE code)
     {
