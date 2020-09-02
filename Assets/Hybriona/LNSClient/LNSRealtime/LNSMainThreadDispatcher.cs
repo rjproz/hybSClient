@@ -44,7 +44,16 @@ public class LNSMainThreadDispatcher : MonoBehaviour
             {
                 while (actions.Count > 0)
                 {
-                    actions.Dequeue()();
+                    System.Action action = actions.Dequeue();
+                    if(action != null)
+                    {
+                        try
+                        {
+                            action();
+                        }
+                        catch { }
+                    }
+                    
                 }
 
             }

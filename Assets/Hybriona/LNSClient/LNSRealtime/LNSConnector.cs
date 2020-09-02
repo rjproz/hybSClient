@@ -6,7 +6,7 @@ using LiteNetLib;
 using LiteNetLib.Utils;
 using UnityEngine;
 
-public class LNSConnector
+public class LNSConnector : IDisposable
 {
    
 
@@ -22,6 +22,7 @@ public class LNSConnector
     public OnFailedToConnect onFailedToConnect;
     public OnDisconnected onDisconnected;
 
+    public OnRoomListReceived onRoomListReceived;
     public OnRoomCreated onRoomCreated;
     public OnRoomJoined onRoomJoined;
     public OnRoomRejoined onRoomRejoined;
@@ -47,18 +48,20 @@ public class LNSConnector
     private NetPeer peer;
     private NetDataWriter clientDataWriter;
     private NetDataWriter writer;
-
+    private LNSRoomList roomList;
+    private LNSJoinRoomFilter currentRoomFilter;
 
     private object thelock = new object();
 
 
     private string _lastconnectedIP;
     private int _lastconnectedPort;
-    private string _lastConnectedRoom;
+    public string _lastConnectedRoom { get; protected set; }
     private string _lastConnectedRoomMasterClient;
     public LNSConnector(LNSClientParameters clientParameters,LNSConnectSettings settings, ILNSDataReceiver dataReceiver)
     {
         this.clientParameters = clientParameters;
+       
         this.settings = settings;
        
 
@@ -76,9 +79,9 @@ public class LNSConnector
 
 
         client = new NetManager(listener);
-       
 
 
+        SetClientId(this.clientParameters.id);
 
         //Write Client Data
         clientDataWriter.Put(this.settings.serverSecurityKey);
@@ -97,6 +100,11 @@ public class LNSConnector
         listener.NetworkErrorEvent += Listener_NetworkErrorEvent;
         listener.NetworkReceiveUnconnectedEvent += Listener_NetworkReceiveUnconnectedEvent;
 
+    }
+
+    ~LNSConnector()
+    {
+        Dispose();
     }
 
     
@@ -214,7 +222,7 @@ public class LNSConnector
                 {
                   
 
-                    Debug.Log("Reconnecting: Begin");
+                    Debug.Log("Reconnecting: Begin "+i);
                     client.Flush();
                     peer = client.Connect(_lastconnectedIP, _lastconnectedPort, clientDataWriter);
                     while (peer.ConnectionState == ConnectionState.Outgoing)
@@ -234,6 +242,23 @@ public class LNSConnector
                     Debug.Log("Reconnecting : Not Connected");
                     Thread.Sleep(5000);
                 }
+
+                bool wasConnected = isConnected;
+                localClient.isConnected = isConnected = isInActiveRoom = false;
+                isConnected = localClient.isConnected = false;
+                _lastConnectedRoom = null;
+                _lastConnectedRoomMasterClient = null;
+
+                if (onDisconnected != null)
+                {
+                    DispatchToMainThread(() =>
+                    {
+                        onDisconnected();
+
+                    });
+
+                }
+
             }).Start();
 
             return true;
@@ -253,11 +278,38 @@ public class LNSConnector
     {
         _lastConnectedRoom = null;
         _lastconnectedIP = null;
-        localClient.isConnected = isConnected = false;
         clients.Clear();
         client.DisconnectAll();
     }
 
+    public bool FetchRoomList()
+    {
+        return FetchRoomList(currentRoomFilter);
+    }
+
+    public bool FetchRoomList(LNSJoinRoomFilter filter)
+    {
+        if (isConnected && !isInActiveRoom)
+        {
+            currentRoomFilter = filter;
+            lock (thelock)
+            {
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_FETCH_ROOM_LIST);
+                if (filter != null)
+                {
+                    filter.AppendToWriter(writer);
+                }
+                else
+                {
+                    writer.Put((byte)0);
+                }
+                peer.Send(writer, DeliveryMethod.ReliableOrdered);
+            }
+            return true;
+        }
+        return false;
+    }
 
     public bool CreateRoom(string roomid, LNSCreateRoomParameters parameters)
     {
@@ -574,9 +626,20 @@ public class LNSConnector
     private void Listener_NetworkReceiveEvent(NetPeer peer, NetPacketReader packetReader, DeliveryMethod deliveryMethod)
     {
         byte clientInstruction = packetReader.GetByte();
-        
 
-        if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_CREATED)
+        if(clientInstruction == LNSConstants.CLIENT_EVT_ROOM_LIST)
+        {
+            if(roomList == null)
+            {
+                roomList = new LNSRoomList();
+            }
+            JsonUtility.FromJsonOverwrite(packetReader.GetString(), roomList);
+            if (onRoomListReceived != null)
+            {
+                threadDispatcher.Add(() => onRoomListReceived(roomList));
+            }
+        }
+        else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_CREATED)
         {
             isInActiveRoom = true;
             _lastConnectedRoom = packetReader.GetString();
@@ -648,15 +711,17 @@ public class LNSConnector
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_MASTERCLIENT_CHANGED)
         {
             _lastConnectedRoomMasterClient = packetReader.GetString();
-            localClient.isMasterClient = isLocalPlayerMasterClient = (_lastConnectedRoomMasterClient == id);
-            //UnityEngine.Debug.Log("CLIENT_EVT_ROOM_MASTERCLIENT_CHANGED : "+ _lastConnectedRoomMasterClient);
+            localClient.isMasterClient = isLocalPlayerMasterClient = (_lastConnectedRoomMasterClient == id);         
             if (onMasterClientUpdated != null)
             {
                 try
                 {
                     if (isLocalPlayerMasterClient)
                     {
-                        onMasterClientUpdated(localClient);
+                        threadDispatcher.Add(() =>
+                        {
+                            onMasterClientUpdated(localClient);
+                        });
                     }
                     else
                     {
@@ -880,6 +945,7 @@ public class LNSConnector
 
     private void Listener_PeerConnectedEvent(NetPeer peer)
     {
+        Debug.Log(peer.EndPoint);
         localClient.isConnected = isConnected = true;
         if(onConnected != null)
         {
@@ -911,5 +977,13 @@ public class LNSConnector
             }
             
         });
+    }
+
+    public void Dispose()
+    {
+        if(client != null)
+        {
+            client.DisconnectAll();
+        }
     }
 }

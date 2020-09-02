@@ -6,6 +6,8 @@ public delegate void OnConnected();
 public delegate void OnFailedToConnect(CONNECTION_FAILURE_CODE code = CONNECTION_FAILURE_CODE.COULD_NOT_CONNECT_TO_HOST);
 public delegate void OnDisconnected();
 
+public delegate void OnRoomListReceived(LNSRoomList roomList);
+
 public delegate void OnRoomCreated();
 public delegate void OnRoomJoined();
 public delegate void OnRoomRejoined();
