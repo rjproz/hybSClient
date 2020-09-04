@@ -6,6 +6,7 @@ using UnityEngine;
 
 public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
 {
+    public string serverKey;
     public MainPlayer player;
     public GameObject clonePrefab;
     public bool connectToLocalServer = false;
@@ -17,9 +18,21 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
 
 
     private object thelock = new object();
+
+    private void Awake()
+    {
+        if (string.IsNullOrEmpty(serverKey))
+        {
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = UnityEditor.EditorApplication.isPaused = false;
+#endif
+            throw new System.Exception("Server key is required to run this");
+        }
+
+    }
     public void Initialize(string id)
     {
-
 
 
 
@@ -38,7 +51,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
             settings.serverIp = "45.55.33.88";
         }
         settings.serverPort = 10002;
-        settings.serverSecurityKey = "iamatestserver";
+        settings.serverSecurityKey = serverKey;
 
         //settings.serverIp = "192.168.0.100";
         connector = new LNSConnector(clientParameters,settings, this);

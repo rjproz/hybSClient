@@ -3114,6 +3114,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2c79308194bf2432bb007c7b609f2658, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  serverKey: 
   player: {fileID: 1105592089}
   clonePrefab: {fileID: 704534873}
   connectToLocalServer: 0
