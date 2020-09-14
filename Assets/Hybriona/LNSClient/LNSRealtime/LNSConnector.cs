@@ -945,7 +945,6 @@ public class LNSConnector : IDisposable
 
     private void Listener_PeerConnectedEvent(NetPeer peer)
     {
-        Debug.Log(peer.EndPoint);
         localClient.isConnected = isConnected = true;
         if(onConnected != null)
         {
