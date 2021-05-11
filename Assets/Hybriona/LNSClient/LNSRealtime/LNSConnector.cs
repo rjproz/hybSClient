@@ -223,7 +223,7 @@ public class LNSConnector : IDisposable
                   
 
                     Debug.Log("Reconnecting: Begin "+i);
-                    client.Flush();
+                    client.TriggerUpdate();
                     peer = client.Connect(_lastconnectedIP, _lastconnectedPort, clientDataWriter);
                     while (peer.ConnectionState == ConnectionState.Outgoing)
                     {
@@ -945,6 +945,7 @@ public class LNSConnector : IDisposable
 
     private void Listener_PeerConnectedEvent(NetPeer peer)
     {
+        Debug.Log(peer.EndPoint);
         localClient.isConnected = isConnected = true;
         if(onConnected != null)
         {

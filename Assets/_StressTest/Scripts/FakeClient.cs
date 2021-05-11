@@ -39,7 +39,7 @@ public class FakeClient : ILNSDataReceiver
     public void SendData()
     {
         writer.Reset();
-        writer.Put("Message from " + id + " at "+ System.DateTime.Now.ToFileTime());
+        writer.Put("Message from " + id + " at "+ Time.fixedTime);
         connector.RaiseEventOnAll(0, writer, DeliveryMethod.ReliableOrdered);
     }
 
