@@ -50,4 +50,12 @@ public class FakeClient : ILNSDataReceiver
             messageReceiver(reader.GetString());
         }
     }
+
+    public void Disconnect()
+    {
+        if (connector != null)
+        {
+            connector.Disconnect();
+        }
+    }
 }

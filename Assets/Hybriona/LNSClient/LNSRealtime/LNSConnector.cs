@@ -474,20 +474,46 @@ public class LNSConnector : IDisposable
 
             peer.Send(writer, deliveryMethod);
 
-            new Thread(() =>
-            {
-                lock (thelock)
-                {
-                   
-                }
-                
-            }).Start();
+           
             return true;
         }
         return false;
     }
 
-   
+    /// <summary>
+    /// RaiseEventOnAll but with Quad tree optimizations
+    /// </summary>
+    /// <param name="eventCode"></param>
+    /// <param name="m_writer"></param>
+    /// <param name="deliveryMethod"></param>
+    /// <returns></returns>
+    public bool RaiseEventOnNearby(ushort eventCode,Vector2 position,float extends,LNSWriter m_writer, DeliveryMethod deliveryMethod)
+    {
+        if (isConnected && isInActiveRoom)
+        {
+
+            writer.Reset();
+            writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_TO_NEARBY_CLIENTS);
+
+            Rect searchRect = new Rect(Vector3.zero, new Vector2(extends * 2, extends * 2));
+            searchRect.center = position;
+            writer.Put(searchRect.x);
+            writer.Put(searchRect.y);
+            writer.Put(searchRect.size.x);
+            writer.Put(searchRect.size.y);
+
+            //Debug.LogFormat("From {0} - Search Rect {1},{2} {3},{4} - Position {5},{6}", "Client", searchRect.x, searchRect.x, searchRect.width, searchRect.height, position.x, position.y);
+            writer.Put(eventCode);
+            writer.Put(m_writer.Data, 0, m_writer.Length);
+            peer.Send(writer, deliveryMethod);
+
+           
+            return true;
+        }
+        return false;
+    }
+
+
     //public bool RaiseEventOnAllAndCache(ushort eventCode, LNSWriter m_writer)
     //{
     //    if (isConnected && isInActiveRoom)

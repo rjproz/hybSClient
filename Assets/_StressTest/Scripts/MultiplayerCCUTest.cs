@@ -11,6 +11,7 @@ public class MultiplayerCCUTest : MonoBehaviour
 
     private FakeClient sender;
     private FakeClient receiver;
+    private List<FakeClient> clients = new List<FakeClient>();
     IEnumerator Start()
     {
         Application.targetFrameRate = 60;
@@ -18,8 +19,10 @@ public class MultiplayerCCUTest : MonoBehaviour
         for(int i=0;i<ccu;i++)
         {
             FakeClient client = new FakeClient("45.55.33.88", 10002, string.Format("Agent {0}_{1}", idoffset,(i + 1)));
-            if(i % 10 == 0)
+            clients.Add(client);
+            if (i % 10 == 0)
             {
+               
                 yield return null;
                 yield return null;
                 yield return null;
@@ -36,6 +39,7 @@ public class MultiplayerCCUTest : MonoBehaviour
             }
         }
 
+
         receiver.messageReceiver += (string message) =>
         {
             messageText.text = message;
@@ -49,5 +53,11 @@ public class MultiplayerCCUTest : MonoBehaviour
         }
     }
 
-   
+    private void OnDestroy()
+    {
+        foreach(var client in clients)
+        {
+            client.Disconnect();
+        }
+    }
 }
