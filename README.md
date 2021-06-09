@@ -11,6 +11,7 @@ Also, **hybSServer** repo can be found [here](https://github.com/rjproz/hybSServ
 4. Both Reliable and UnReliable Events
 5. Room supports various parameters like game version, password, public/private mode and lock/unlock.
 6. Reconnect and rejoin room feature.
+7. Partially Authoritative MMO or Battle Royale logic can be implemented
 
 
 The Game ["Hurl with Friends"](https://hybriona.itch.io/hurl-with-friends) was made using this library in 4 days for WeeklyGameJam 164
