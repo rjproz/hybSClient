@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using LiteNetLib;
@@ -17,6 +16,7 @@ public class LNSConnector : IDisposable
     public LNSClient localClient { get; private set; }
     public List<LNSClient> clients { get; private set; } = new List<LNSClient>();
     public bool isLocalPlayerMasterClient { get; private set; } = false;
+    public Dictionary<string, byte[]> persistentData { get; private set; } = new Dictionary<string, byte[]>();
 
     public OnConnected onConnected;
     public OnFailedToConnect onFailedToConnect;
@@ -321,6 +321,7 @@ public class LNSConnector : IDisposable
                 writer.Put(LNSConstants.SERVER_EVT_CREATE_ROOM);
                 writer.Put(roomid);
                 parameters.AppendToWriter(writer);
+                
                 peer.Send(writer, DeliveryMethod.ReliableOrdered);
             }
             return true;
@@ -621,6 +622,69 @@ public class LNSConnector : IDisposable
         return false;
     }
 
+    public bool SendCachedDataToAll(string key, LNSWriter m_writer)
+    {
+        if (isConnected && isInActiveRoom)
+        {
+            if (isLocalPlayerMasterClient)
+            {
+                new Thread(() =>
+                {
+                    lock (thelock)
+                    {
+                        writer.Reset();
+                        writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_CACHE);
+                        writer.Put(key);
+                        writer.Put(m_writer.Data);
+                       
+                        peer.Send(writer, DeliveryMethod.ReliableOrdered);
+                        //peer.Send(writer, deliveryMethod);
+                    }
+                }).Start();
+                return true;
+            }
+            else
+            {
+                throw new Exception("Only master client can send Cached Data to server");
+            }
+
+           
+        }
+        return false;
+        
+    }
+
+    public bool SendCachedDataToAll(string key, byte [] rawData)
+    {
+        if (isConnected && isInActiveRoom)
+        {
+            if (isLocalPlayerMasterClient)
+            {
+                new Thread(() =>
+                {
+                    lock (thelock)
+                    {
+                        writer.Reset();
+                        writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_CACHE);
+                        writer.Put(key);
+                        writer.Put(rawData);
+
+                        peer.Send(writer, DeliveryMethod.ReliableOrdered);
+                        //peer.Send(writer, deliveryMethod);
+                    }
+                }).Start();
+                return true;
+            }
+            else
+            {
+                throw new Exception("Only master client can send Cached Data to server");
+            }
+
+
+        }
+        return false;
+
+    }
 
 
     public void DisconnectFromRoom()
@@ -837,6 +901,42 @@ public class LNSConnector : IDisposable
                     return;
                 }
             }
+        }
+        else if(clientInstruction == LNSConstants.CLIENT_EVT_ROOM_CACHE_DATA)
+        {
+            LNSReader reader = LNSReader.GetFromPool();
+            string key = packetReader.GetString();
+            byte[] data = packetReader.GetRemainingBytes();
+            reader.SetSource(data);
+
+            if(persistentData.ContainsKey(key))
+            {
+                persistentData[key] = data;
+            }
+            else
+            {
+                persistentData.Add(key, data);
+            }
+
+            if (dataReceiver != null)
+            {
+                threadDispatcher.Add(() =>
+                {
+                    try
+                    {
+                        dataReceiver.OnCachedDataReceived(key, reader);
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogError(ex.Message + " " + ex.StackTrace);
+                    }
+                    reader.Recycle();
+
+
+                });
+            }
+            
+
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_RAW)
         {

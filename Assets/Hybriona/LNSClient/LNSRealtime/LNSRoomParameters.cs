@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using LiteNetLib;
 using LiteNetLib.Utils;
 using UnityEngine;
@@ -10,6 +8,12 @@ public class LNSCreateRoomParameters
     public bool isPublic { get; set; } = true;
     public string password { get; set; } = null;
     public int maxPlayers { get; set; } = 10;
+
+    /// <summary>
+    /// Makes the room active for sometime (in minutes) even if there are no players in the rooms. Good for MMO and persistent worlds
+    /// </summary>
+    public long idleLife { get; set; } = 0;
+
     public bool isQuadTreeAllowed { get; set; } = false;
     public Rect quadTreeBounds { get; set; }
     public int maxPlayersInQuadCell { get; set; } = 5;
@@ -19,7 +23,7 @@ public class LNSCreateRoomParameters
     public void EnableQuadTreeCellOptimization(Vector2 center, Vector2 size)
     {
         this.isQuadTreeAllowed = true;
-        this.quadTreeBounds = new Rect(center.x - size.x * .5f, center.y - size.y * .5f, size.x,size.y);
+        this.quadTreeBounds = new Rect(center.x - size.x * .5f, center.y - size.y * .5f, size.x, size.y);
         this.maxPlayersInQuadCell = maxPlayersInQuadCell;
     }
 
@@ -54,7 +58,8 @@ public class LNSCreateRoomParameters
             writer.Put(quadTreeBounds.width);
             writer.Put(quadTreeBounds.height);
         }
-        writer.Put(maxPlayersInQuadCell);
+
+        writer.Put(idleLife);
     }
 
     public static LNSCreateRoomParameters FromReader(NetPacketReader reader)
@@ -80,8 +85,8 @@ public class LNSCreateRoomParameters
                     //bounds.center = new Vector2, reader.GetFloat());
 
                     o.quadTreeBounds = bounds;
-                    o.maxPlayersInQuadCell = reader.GetInt();
                 }
+                o.idleLife = reader.GetLong();
             }
             catch
             {
@@ -164,3 +169,4 @@ public class LNSJoinRoomFilter
         return true;
     }
 }
+

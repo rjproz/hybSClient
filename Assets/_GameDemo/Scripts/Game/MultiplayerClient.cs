@@ -237,4 +237,9 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
     {
         connector.Disconnect();
     }
+
+    public void OnCachedDataReceived(string key, LNSReader data)
+    {
+        
+    }
 }

@@ -6,5 +6,5 @@ using UnityEngine;
 public interface ILNSDataReceiver
 {
      void OnEventRaised(LNSClient from,ushort eventCode, LNSReader reader, DeliveryMethod deliveryMethod);
-    
+     void OnCachedDataReceived(string key, LNSReader data);
 }

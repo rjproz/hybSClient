@@ -71,6 +71,7 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
             LNSCreateRoomParameters roomParameters = new LNSCreateRoomParameters();
             roomParameters.maxPlayers = 100;
             roomParameters.isQuadTreeAllowed = true;
+            //roomParameters.idleLife = 60 * 24;
             roomParameters.EnableQuadTreeCellOptimization(Vector2.zero,new Vector2(2000,2000));
             connector.CreateRoom("default", roomParameters);
         };
@@ -119,6 +120,13 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
             
             
             yield return new WaitForSeconds(Random.Range(2f, 5f));
+
+            if(connector.isLocalPlayerMasterClient)
+            {
+                //writer.Reset();
+                //writer.Put("nanhi hai suhani @"+Time.time);
+                //connector.SendCachedDataToAll("key3", writer);
+            }
         }
     }
 
@@ -183,5 +191,10 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
         {
             connector.Disconnect();
         }
+    }
+
+    public void OnCachedDataReceived(string key, LNSReader data)
+    {
+        Debug.Log("Cached: "+key + "," + data.GetString());
     }
 }
