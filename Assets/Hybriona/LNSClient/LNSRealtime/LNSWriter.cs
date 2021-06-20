@@ -3,6 +3,12 @@ using LiteNetLib.Utils;
 public class LNSWriter : NetDataWriter
 {
 
+    public void Put(Vector2 vector2)
+    {
+        base.Put(vector2.x);
+        base.Put(vector2.y);
+    }
+
     public void Put(Vector3 vector3)
     {
         base.Put(vector3.x);

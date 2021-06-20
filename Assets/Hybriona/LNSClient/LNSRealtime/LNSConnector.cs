@@ -57,7 +57,7 @@ public class LNSConnector : IDisposable
     private string _lastconnectedIP;
     private int _lastconnectedPort;
     public string _lastConnectedRoom { get; protected set; }
-    private string _lastConnectedRoomMasterClient;
+    private string _lastConnectedRoomMasterClientId;
     public LNSConnector(LNSClientParameters clientParameters,LNSConnectSettings settings, ILNSDataReceiver dataReceiver)
     {
         this.clientParameters = clientParameters;
@@ -107,6 +107,10 @@ public class LNSConnector : IDisposable
         Dispose();
     }
 
+    public void SetDataReceiver(ILNSDataReceiver dataReceiver)
+    {
+        this.dataReceiver = dataReceiver;
+    }
     
     public bool SetClientId(string id)
     {
@@ -247,7 +251,7 @@ public class LNSConnector : IDisposable
                 localClient.isConnected = isConnected = isInActiveRoom = false;
                 isConnected = localClient.isConnected = false;
                 _lastConnectedRoom = null;
-                _lastConnectedRoomMasterClient = null;
+                _lastConnectedRoomMasterClientId = null;
 
                 if (onDisconnected != null)
                 {
@@ -515,76 +519,10 @@ public class LNSConnector : IDisposable
     }
 
 
-    //public bool RaiseEventOnAllAndCache(ushort eventCode, LNSWriter m_writer)
-    //{
-    //    if (isConnected && isInActiveRoom)
-    //    {
-
-    //        new Thread(() =>
-    //        {
-    //            lock (thelock)
-    //            {
-    //                writer.Reset();
-    //                writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_CACHE);
-    //                writer.Put(eventCode);
-    //                writer.Put(m_writer.Data);
-    //                peer.Send(writer,DeliveryMethod.ReliableOrdered);
-    //            }
-    //        }).Start();
-    //        return true;
-    //    }
-    //    return false;
-    //}
-
-    //public bool RaiseEventRemoveMyCache()
-    //{
-    //    if (isConnected && isInActiveRoom)
-    //    {
-
-    //        new Thread(() =>
-    //        {
-    //            lock (thelock)
-    //            {
-    //                //writer.Reset();
-    //                //writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_CACHE);
-    //                //writer.Put(eventCode);
-    //                //writer.Put(m_writer.Data);
-    //                //peer.Send(writer, DeliveryMethod.ReliableOrdered);
-    //            }
-    //        }).Start();
-    //        return true;
-    //    }
-    //    return false;
-    //}
-
-    //public bool RaiseEventRemoveAllCache()
-    //{
-    //    if (isConnected && isInActiveRoom && isLocalPlayerMasterClient)
-    //    {
-
-    //        new Thread(() =>
-    //        {
-    //            lock (thelock)
-    //            {
-    //                writer.Reset();
-    //                writer.Put(LNSConstants.SERVER_EVT_REMOVE_ALL_CACHE);
-    //                peer.Send(writer, DeliveryMethod.ReliableOrdered);
-    //                //writer.Put(eventCode);
-    //                //writer.Put(m_writer.Data);
-
-    //            }
-    //        }).Start();
-    //        return true;
-    //    }
-    //    return false;
-    //}
-
-
-
 
     public bool RaiseEventOnClient(LNSClient client, ushort eventCode, LNSWriter m_writer, DeliveryMethod deliveryMethod)
     {
-        return RaiseEventOnClient(client.id, eventCode, m_writer, deliveryMethod);
+        return RaiseEventOnClient(client.networkID, eventCode, m_writer, deliveryMethod);
     }
 
     public bool RaiseEventOnMasterClient (ushort eventCode, LNSWriter m_writer, DeliveryMethod deliveryMethod)
@@ -593,10 +531,16 @@ public class LNSConnector : IDisposable
         {
             return false;
         }
-        return RaiseEventOnClient(_lastConnectedRoomMasterClient, eventCode, m_writer, deliveryMethod);
+
+        var masterClient = clients.Find(client => client.id == _lastConnectedRoomMasterClientId);
+        if (masterClient != null)
+        {
+            return RaiseEventOnClient(masterClient.networkID, eventCode, m_writer, deliveryMethod);
+        }
+        return false;
     }
 
-    public bool RaiseEventOnClient(string clientid,ushort eventCode, LNSWriter m_writer, DeliveryMethod deliveryMethod)
+    public bool RaiseEventOnClient(int clientNetId,ushort eventCode, LNSWriter m_writer, DeliveryMethod deliveryMethod)
     {
         if (isConnected && isInActiveRoom)
         {
@@ -607,7 +551,7 @@ public class LNSConnector : IDisposable
                 {
                     writer.Reset();
                     writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_TO_CLIENT);
-                    writer.Put(clientid);
+                    writer.Put(clientNetId);
                     writer.Put(eventCode);
                     if (m_writer.Data.Length > 0)
                     {
@@ -800,8 +744,8 @@ public class LNSConnector : IDisposable
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_MASTERCLIENT_CHANGED)
         {
-            _lastConnectedRoomMasterClient = packetReader.GetString();
-            localClient.isMasterClient = isLocalPlayerMasterClient = (_lastConnectedRoomMasterClient == id);         
+            _lastConnectedRoomMasterClientId = packetReader.GetString();
+            localClient.isMasterClient = isLocalPlayerMasterClient = (_lastConnectedRoomMasterClientId == id);         
             if (onMasterClientUpdated != null)
             {
                 try
@@ -815,9 +759,11 @@ public class LNSConnector : IDisposable
                     }
                     else
                     {
+
+
                         for (int i = 0; i < clients.Count; i++)
                         {
-                            if (clients[i].id == _lastConnectedRoomMasterClient)
+                            if (clients[i].id == _lastConnectedRoomMasterClientId)
                             {
                                 clients[i].isMasterClient = true;
                                 LNSClient client = clients[i];
@@ -848,57 +794,49 @@ public class LNSConnector : IDisposable
             string client_displayName = packetReader.GetString();
             CLIENT_PLATFORM client_platform = (CLIENT_PLATFORM) packetReader.GetByte();
             int  client_netID = packetReader.GetInt();
-            LNSClient client = null;
-            for(int i=0;i<clients.Count;i++)
+            LNSClient currentClient = clients.Find(client => client.id == client_id);
+
+            if(currentClient != null)
             {
-                if(clients[i].id == client_id)
-                {
-                    client = clients[i];
-                    client.displayName = client_displayName;
-                    client.platform = client_platform;
-                    client.networkID = client_netID;
-                    break;
-                }
+                currentClient.displayName = client_displayName;
+                currentClient.platform = client_platform;
+                currentClient.networkID = client_netID;
+            }
+            else
+            {
+                currentClient = new LNSClient();
+                currentClient.id = client_id;
+                currentClient.displayName = client_displayName;
+                currentClient.platform = client_platform;
+                currentClient.networkID = client_netID;
+
+                clients.Add(currentClient);
             }
 
-            if(client == null)
-            {
-                client = new LNSClient();
-                client.id = client_id;
-                client.displayName = client_displayName;
-                client.platform = client_platform;
-                client.networkID = client_netID;
-
-                clients.Add(client);
-            }
-            client.isConnected = true;
+          
+            currentClient.isConnected = true;
 
             if (onPlayerConnected != null)
             {
                 threadDispatcher.Add(() =>
                 {
-                    onPlayerConnected(client);
+                    onPlayerConnected(currentClient);
                 });
             }
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_PLAYER_DISCONNECTED)
         {
             string client_id = packetReader.GetString();
-            
-            for (int i = 0; i < clients.Count; i++)
+            var currentClient = clients.Find(client => client.id == client_id);
+            if(currentClient != null)
             {
-               
-                if (clients[i].id == client_id)
+                currentClient.isConnected = false;
+                if (onPlayerDisconnected != null)
                 {
-                    clients[i].isConnected = false;
-                    if (onPlayerDisconnected != null)
+                    threadDispatcher.Add(() =>
                     {
-                        threadDispatcher.Add(() =>
-                        {
-                            onPlayerDisconnected(clients[i]);
-                        });
-                    }
-                    return;
+                        onPlayerDisconnected(currentClient);
+                    });
                 }
             }
         }
@@ -940,43 +878,41 @@ public class LNSConnector : IDisposable
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_RAW)
         {
-            string fromid = packetReader.GetString();
+            int fromNetId = packetReader.GetInt();
 
-            for (int i = 0; i < clients.Count; i++)
+            var currentClient = clients.Find(client => client.networkID == fromNetId);
+            if(currentClient != null)
             {
-                if(fromid == clients[i].id)
+                if (dataReceiver != null)
                 {
-                    
-                    if (dataReceiver != null)
+                    ushort eventCode = packetReader.GetUShort();
+                    LNSReader reader = LNSReader.GetFromPool();
+
+                    LNSClient fromClient = currentClient;
+                    DeliveryMethod _deliveryMethod = deliveryMethod;
+
+                    reader.SetSource(packetReader.GetRemainingBytes());
+
+                    threadDispatcher.Add(() =>
                     {
-                        ushort eventCode = packetReader.GetUShort();
-                        LNSReader reader = LNSReader.GetFromPool();
-
-                       
-                        LNSClient fromClient = clients[i];
-                        DeliveryMethod _deliveryMethod = deliveryMethod;
-
-                        reader.SetSource(packetReader.GetRemainingBytes());
-
-                        threadDispatcher.Add(() =>
+                        try
                         {
-                            try
-                            {
-                                dataReceiver.OnEventRaised(fromClient, eventCode, reader, _deliveryMethod);
-                            }
-                            catch(System.Exception ex) {
-                                Debug.LogError(ex.Message + " "+ex.StackTrace);
-                            }
-                            reader.Recycle();
+                            dataReceiver.OnEventRaised(fromClient, eventCode, reader, _deliveryMethod);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogError(ex.Message + " " + ex.StackTrace);
+                        }
+                        reader.Recycle();
 
 
-                        });
+                    });
 
-                       
-                    }
-                    break;
+
                 }
             }
+
+            
           
         }
         packetReader.Recycle();

@@ -10,6 +10,13 @@ public class LNSReader : NetDataReader
         PutIntoPool(this);
     }
 
+    public Vector2 GetVector2()
+    {
+        Vector2 v = Vector2.zero;
+        v.x = base.GetFloat();
+        v.y = base.GetFloat();
+        return v;
+    }
 
     public Vector3 GetVector3()
     {

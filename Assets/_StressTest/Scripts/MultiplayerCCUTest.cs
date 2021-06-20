@@ -14,7 +14,7 @@ public class MultiplayerCCUTest : MonoBehaviour
     private List<FakeClient> clients = new List<FakeClient>();
     IEnumerator Start()
     {
-        Application.targetFrameRate = 60;
+        Application.targetFrameRate = 30;
         string idoffset = Random.Range(1, 999999)+"" + Random.Range(1, 999999); 
         for(int i=0;i<ccu;i++)
         {

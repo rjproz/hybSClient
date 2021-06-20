@@ -69,7 +69,7 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
         connector.onConnected = () =>
         {
             LNSCreateRoomParameters roomParameters = new LNSCreateRoomParameters();
-            roomParameters.maxPlayers = 100;
+            roomParameters.maxPlayers = 1000;
             roomParameters.isQuadTreeAllowed = true;
             //roomParameters.idleLife = 60 * 24;
             roomParameters.EnableQuadTreeCellOptimization(Vector2.zero,new Vector2(2000,2000));
