@@ -53,7 +53,7 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
             connectSettings.serverIp = ip;
         }
         connectSettings.serverPort = port;
-        connectSettings.serverSecurityKey = "demokey";
+        connectSettings.serverSecurityKey = ServerKey.GetKey();
         connectSettings.gameKey = "hybriona.quadtreetest";
         if (!useLive)
         {
@@ -62,16 +62,12 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
 
         connector = new LNSConnector(clientParameters, connectSettings, this);
 
-
-
-
-       
         connector.onConnected = () =>
         {
             LNSCreateRoomParameters roomParameters = new LNSCreateRoomParameters();
             roomParameters.maxPlayers = 1000;
             roomParameters.isQuadTreeAllowed = true;
-            //roomParameters.idleLife = 60 * 24;
+            roomParameters.idleLife = 60 * 24;
             roomParameters.EnableQuadTreeCellOptimization(Vector2.zero,new Vector2(2000,2000));
             connector.CreateRoom("default", roomParameters);
         };
@@ -174,7 +170,7 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
         {
             player.localPosition = Vector3.MoveTowards(player.localPosition, playerTarget, Time.deltaTime * 15f);
         }
-
+        /*
         foreach (var element in remoteClones)
         {
             if(Vector3.Distance(player.localPosition, element.Value.transform.localPosition) > searchExtends)
@@ -182,6 +178,7 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
                 element.Value.transform.localPosition = new Vector3(0,-50,0);
             }
         }
+        */
         
     }
 

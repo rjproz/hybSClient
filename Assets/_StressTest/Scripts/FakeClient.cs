@@ -22,7 +22,7 @@ public class FakeClient : ILNSDataReceiver
         LNSConnectSettings connectSettings = new LNSConnectSettings();
         connectSettings.serverIp = ip;
         connectSettings.serverPort = port;
-        connectSettings.serverSecurityKey = "iamatestserver";
+        connectSettings.serverSecurityKey = ServerKey.GetKey();
         connectSettings.gameKey = "hybriona.ccutest";
 
         writer = new LNSWriter();
@@ -39,7 +39,7 @@ public class FakeClient : ILNSDataReceiver
     public void SendData()
     {
         writer.Reset();
-        writer.Put("Message from " + id + " at "+ Time.fixedTime);
+        writer.Put("Message from " + id + " at "+ System.DateTime.Now.ToString());
         connector.RaiseEventOnAll(0, writer, DeliveryMethod.ReliableOrdered);
     }
 
