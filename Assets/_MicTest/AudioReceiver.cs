@@ -24,12 +24,13 @@ public class AudioReceiver : MonoBehaviour
 
     internal void Send(int freq,int channels,byte[] samplesCompressed)
     {
-        Debug.Log(samplesCompressed.Length + " bytes");
-        samplesCompressed = Decompress(samplesCompressed);
+        //Debug.Log(samplesCompressed.Length + " bytes");
+        //samplesCompressed = Decompress(samplesCompressed);
         if (clip == null)
         {
 
             clip = AudioClip.Create("", samples.Length, channels, freq, false);
+            audioSource.Play();
         }
 
         for(int i=0;i<samplesCompressed.Length;i++)
@@ -50,7 +51,7 @@ public class AudioReceiver : MonoBehaviour
         //}
 
         //Debug.Log("MAX " + max);
-        audioSource.Stop();
+        //audioSource.Stop();
         audioSource.Play();
        
 

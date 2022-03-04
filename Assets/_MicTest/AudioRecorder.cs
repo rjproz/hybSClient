@@ -14,7 +14,7 @@ public class AudioRecorder : MonoBehaviour
     [Range(-1, 1)]
     public float noiseGate = -1;
     public AudioReceiver receiver;
-
+    public int diff;
     int lastSample = 0;
     void Start()
     {
@@ -33,22 +33,23 @@ public class AudioRecorder : MonoBehaviour
         clip = Microphone.Start(deviceName, true, 100, freq);
         
         float[] samples = new float[10000000];
+        byte[] samplesByte = new byte[10000000];
         while (true)
         {
             int pos = Microphone.GetPosition(deviceName);
             
-            int diff = pos - lastSample;
+            diff = pos - lastSample;
             if (diff > 0)
             {
 
 
                 int length = clip.channels * diff;
-                byte[] samplesCompressed = new byte[length];
+               
                 clip.GetData(samples, lastSample);
-
+                //Debug.LogFormat("samplesCompressed: {0} , samples: {1}, currentLength: {2}", samplesByte.Length,samples.Length,length);
                 for (int i = 0; i < length; i++)
                 {
-                    samplesCompressed[i] = (byte)((int)((samples[i] + 1) * .5f * 255f));
+                    samplesByte[i] = (byte)((int)((samples[i] + 1) * .5f * 255f));
                 }
 
                 //for (int i = 0; i < samples.Length; i++)
@@ -60,22 +61,22 @@ public class AudioRecorder : MonoBehaviour
                 //        samples[i] = 0;
                 //    }
                 //}
-                //Debug.Log("Before: " + samplesCompressed.Length);
-                samplesCompressed = Compress(samplesCompressed);
-                //Debug.Log("After: " + samplesCompressed.Length);
+                //Debug.Log("Before: " + length);
+                //byte [] compressed = Compress(samplesByte, length);
+                //Debug.Log("After: " + compressed.Length);
 
-                receiver.Send(freq,clip.channels, samplesCompressed);
+                receiver.Send(freq,clip.channels, samplesByte);
             }
             lastSample = pos;
-            yield return new WaitForSeconds(1f);
+            yield return null;
         }
     }
-    public static byte[] Compress(byte[] data)
+    public static byte[] Compress(byte[] data, int length)
     {
         MemoryStream output = new MemoryStream();
         using (DeflateStream dstream = new DeflateStream(output, System.IO.Compression.CompressionLevel.Fastest))
         {
-            dstream.Write(data, 0, data.Length);
+            dstream.Write(data, 0, length);
         }
         return output.ToArray();
     }
