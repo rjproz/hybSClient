@@ -5,10 +5,7 @@ public class LNSReader : NetDataReader
 {
 
 
-    public void Recycle()
-    {
-        PutIntoPool(this);
-    }
+   
 
     public Vector2 GetVector2()
     {
@@ -61,6 +58,11 @@ public class LNSReader : NetDataReader
 
 
     //Pool manager
+
+    public void Recycle()
+    {
+        PutIntoPool(this);
+    }
 
     private static Queue<LNSReader> pool = new Queue<LNSReader>();
     private static object theLock = new object();

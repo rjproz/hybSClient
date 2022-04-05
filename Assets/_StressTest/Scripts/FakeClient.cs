@@ -59,7 +59,7 @@ public class FakeClient : ILNSDataReceiver
         }
     }
 
-    public void OnCachedDataReceived(string key, LNSReader data)
+    public void OnCachedDataReceived(string key, byte [] rawData)
     {
         
     }

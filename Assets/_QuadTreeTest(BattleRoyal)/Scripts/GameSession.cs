@@ -190,8 +190,10 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
         }
     }
 
-    public void OnCachedDataReceived(string key, LNSReader data)
+    public void OnCachedDataReceived(string key, byte [] rawdata)
     {
-        Debug.Log("Cached: "+key + "," + data.GetString());
+        LNSReader reader = LNSReader.GetFromPool();
+        Debug.Log("Cached: "+key + "," + reader.GetString());
+        reader.Recycle();
     }
 }

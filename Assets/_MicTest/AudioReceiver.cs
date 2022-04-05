@@ -1,74 +1,113 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class AudioReceiver : MonoBehaviour
 {
     // Start is called before the first frame update
+    public Text freqChannelsTarget;
     public AudioSource audioSource;
+    public int playbackDelay = 1;
     AudioClip clip;
-    float[] samples;
-    void Start()
+   
+   
+
+
+    Queue<float[]> pending = new Queue<float[]>();
+    List<float> allPending = new List<float>();
+   
+   
+    [SerializeField]
+    private int freq;
+    [SerializeField]
+    private int channels;
+    [SerializeField]
+    private int pendingSamples;
+    public void EnqueueData(int freq, int channels,float [] samples)// byte[] samplesCompressed, int dataLength)
     {
-        samples = new float[100000];
+
+        //pending.Enqueue(samples);
+        allPending.AddRange(samples);
+        pendingSamples = allPending.Count;
+        this.freq = freq;
+        this.channels = channels;
+
+        if (!enabled && allPending.Count >= freq * playbackDelay)
+        //if (!enabled && pending.Count > 2)
+        {
+            freqChannelsTarget.text = string.Format("Freq: {0} Hz, Channels: {1}", freq, channels);
+            enabled = true;
+           
+            //sampleLength = samples.Length;
+        }
+        
+       
     }
 
-    // Update is called once per frame
-    void Update()
+
+    private void Update()
+    {
+
+        
+        if (!audioSource.isPlaying && allPending.Count > 0)
+        {
+            var ac = AudioClip.Create("clip 2", allPending.Count, channels, freq, false);//, ReadCallback, SetPosition);//, pcmreadercallback: Callback);
+
+            float[] samples = allPending.ToArray();
+            FrostweepGames.VoicePro.EchoCancellation.Instance.RegisterFramePlayed(samples);
+            ac.SetData(samples, 0);
+            allPending.Clear();
+            audioSource.clip = ac;
+            audioSource.loop = false;
+            audioSource.mute = false;
+
+            audioSource.Play();
+
+        }
+        pendingSamples = allPending.Count;
+
+        {
+
+
+            //if (!audioSource.isPlaying)// || audioSource.timeSamples == sampleLength-1)
+            //{
+            //    //Debug.Log(audioSource.isPlaying);
+
+            //    var data = pending.Dequeue();
+
+            //    if (audioSource.clip == null)
+            //    {
+            //        clip = AudioClip.Create("clip3", data.Length, channels, freq, false);
+            //        audioSource.clip = clip;
+            //    }
+            //    pendingSamples = pending.Count;
+            //    //sampleLength = data.Length;
+            //    audioSource.clip.SetData(data, 0);
+            //    audioSource.loop = false;
+            //    audioSource.mute = false;
+            //    audioSource.Play();
+            //}
+
+        }
+    }
+
+    private void SetPosition(int position)
+    {
+        Debug.Log(position);
+    }
+
+    private void ReadCallback(float[] data)
     {
         
     }
 
-    internal void Send(int freq,int channels,byte[] samplesCompressed)
+    private void Start()
     {
-        //Debug.Log(samplesCompressed.Length + " bytes");
-        //samplesCompressed = Decompress(samplesCompressed);
-        if (clip == null)
-        {
-
-            clip = AudioClip.Create("", samples.Length, channels, freq, false);
-            audioSource.Play();
-        }
-
-        for(int i=0;i<samplesCompressed.Length;i++)
-        {
-            samples[i] = samplesCompressed[i] / 255f * 2f - 1; 
-        }
-
-        clip.SetData(samples, 0);
-        audioSource.clip = clip;
-
-        //float max = Mathf.NegativeInfinity;
-        //for(int i=0;i<samples.Length;i++)
-        //{
-        //    if(samples[i] > max)
-        //    {
-        //        max = samples[i];
-        //    }
-        //}
-
-        //Debug.Log("MAX " + max);
-        //audioSource.Stop();
-        audioSource.Play();
-       
-
+        enabled = false;
     }
 
-    public static byte[] Decompress(byte[] data)
-    {
-        byte[] arr = null;
-        using (MemoryStream input = new MemoryStream(data))
-        {
-            MemoryStream output = new MemoryStream();
-            using (DeflateStream dstream = new DeflateStream(input, CompressionMode.Decompress))
-            {
-                dstream.CopyTo(output);
-            }
-            arr = output.ToArray();
-        }
-        return arr;
-    }
+
 }

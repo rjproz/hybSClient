@@ -14,6 +14,7 @@ public class LNSConnector : IDisposable
     public bool isInActiveRoom { get; private set; } = false;
 
     public LNSClient localClient { get; private set; }
+    public LNSClient masterClient { get; private set; }
     public List<LNSClient> clients { get; private set; } = new List<LNSClient>();
     public bool isLocalPlayerMasterClient { get; private set; } = false;
     public Dictionary<string, byte[]> persistentData { get; private set; } = new Dictionary<string, byte[]>();
@@ -58,6 +59,7 @@ public class LNSConnector : IDisposable
     private int _lastconnectedPort;
     public string _lastConnectedRoom { get; protected set; }
     private string _lastConnectedRoomMasterClientId;
+
     public LNSConnector(LNSClientParameters clientParameters,LNSConnectSettings settings, ILNSDataReceiver dataReceiver)
     {
         this.clientParameters = clientParameters;
@@ -76,13 +78,13 @@ public class LNSConnector : IDisposable
 
         EventBasedNetListener listener = new EventBasedNetListener();
        
-
+        
 
         client = new NetManager(listener);
 
 
         SetClientId(this.clientParameters.id);
-
+        SetDisplayName(this.clientParameters.displayName);
         //Write Client Data
         clientDataWriter.Put(this.settings.serverSecurityKey);
         clientDataWriter.Put(this.clientParameters.id);
@@ -153,70 +155,52 @@ public class LNSConnector : IDisposable
         }
         _lastconnectedIP = ip;
         _lastconnectedPort = port;
-        new Thread(() =>
-        {
+        //new Thread(() =>{
           
             client.Start();
-            Update();
+            StartUpdateLoop();
             peer = client.Connect(ip, port, clientDataWriter);
 
 
-        }).Start();
+        //}).Start();
         return true;
     }
 
-    protected void Update()
+    protected void StartUpdateLoop()
     {
-        if(client.IsRunning)
-        new Thread(() =>
+        if (client.IsRunning)
         {
-            while (true)
+            new Thread(() =>
             {
-                client.PollEvents();
-                Thread.Sleep(15);
-            }
-            /*
-            while (isConnected)
-            {
-                
-                if (peer.ConnectionState == ConnectionState.Disconnected)
+                while (true)
                 {
-                    threadDispatcher.Add(() =>
-                    {
-                        localClient.isConnected = isConnected = false;
-                        isInActiveRoom = false;
-                        if (onDisconnected != null)
-                        {
-                            onDisconnected();
-                        }
-                    });
-                    if (client != null)
-                    {
-                        client.Stop();
-                    }
-                    return;
+                    client.PollEvents();
+                    Thread.Sleep(15);
                 }
-                client.PollEvents();
-                Thread.Sleep(15);
-            }
-            client.Stop();
-            */
-        }).Start();
+
+            }).Start();
+        }
 
     }
 
-    //public LNSClient FindRemoteClient(string clientid)
-    //{
-    //    for(int i=0;i<client.co)
-    //}
-    //public LNSClient FindRemoteClient(int clientNetId)
-    //{
-
-    //}
-
-    public bool ReconnectAndRejoin(int retries = 20)
+    public int GetMaxSinglePacketSize(DeliveryMethod deliveryMethod)
     {
-       
+        if (isConnected)
+        {
+            return peer.GetMaxSinglePacketSize(deliveryMethod);
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    public bool ReconnectAndRejoin(int retries = 20, string roomid = null)
+    {
+        if(!string.IsNullOrEmpty(roomid))
+        {
+            _lastConnectedRoom = roomid;
+        }
         if (!isConnected && !isInActiveRoom && WasConnectedToARoom())
         {
             //TODO Reconnect logic
@@ -239,7 +223,7 @@ public class LNSConnector : IDisposable
                         Debug.Log("Reconnecting : Connected");
                         localClient.isConnected = isConnected = true;
                         Debug.Log("Reconnecting : Rejoining Room");
-                        Update();
+                        StartUpdateLoop();
                         RejoinLastRoom();
                         return;
                     }
@@ -471,15 +455,44 @@ public class LNSConnector : IDisposable
     {
         if (isConnected && isInActiveRoom)
         {
+            lock (thelock)
+            {
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_NOCACHE);
+                writer.Put(eventCode);
+                writer.Put(m_writer.Data, 0, m_writer.Length);
+                if (deliveryMethod != DeliveryMethod.ReliableOrdered && deliveryMethod != DeliveryMethod.ReliableUnordered && peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
+                {
+                    Debug.LogError("Packet data is too large. Switching to ReliableOrdered method");
+                    deliveryMethod = DeliveryMethod.ReliableOrdered;
+                }
+                peer.Send(writer, deliveryMethod);
 
-            writer.Reset();
-            writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_NOCACHE);
-            writer.Put(eventCode);
-            writer.Put(m_writer.Data,0,m_writer.Length);
+            }
+            return true;
+        }
+        return false;
+    }
 
-            peer.Send(writer, deliveryMethod);
 
-           
+    public bool RaiseEventOnAll(ushort eventCode, byte [] rawData, DeliveryMethod deliveryMethod)
+    {
+        if (isConnected && isInActiveRoom)
+        {
+            lock (thelock)
+            {
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_NOCACHE);
+                writer.Put(eventCode);
+                writer.Put(rawData);
+                if (peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
+                {
+                    Debug.LogError("Packet data is too large. Switching to ReliableOrdered method");
+                    deliveryMethod = DeliveryMethod.ReliableOrdered;
+                }
+                peer.Send(writer, deliveryMethod);
+
+            }
             return true;
         }
         return false;
@@ -496,23 +509,71 @@ public class LNSConnector : IDisposable
     {
         if (isConnected && isInActiveRoom)
         {
+            lock (thelock)
+            {
 
-            writer.Reset();
-            writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_TO_NEARBY_CLIENTS);
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_TO_NEARBY_CLIENTS);
 
-            Rect searchRect = new Rect(Vector3.zero, new Vector2(extends * 2, extends * 2));
-            searchRect.center = position;
-            writer.Put(searchRect.x);
-            writer.Put(searchRect.y);
-            writer.Put(searchRect.size.x);
-            writer.Put(searchRect.size.y);
+                Rect searchRect = new Rect(Vector3.zero, new Vector2(extends * 2, extends * 2));
+                searchRect.center = position;
+                writer.Put(searchRect.x);
+                writer.Put(searchRect.y);
+                writer.Put(searchRect.size.x);
+                writer.Put(searchRect.size.y);
 
-            //Debug.LogFormat("From {0} - Search Rect {1},{2} {3},{4} - Position {5},{6}", "Client", searchRect.x, searchRect.x, searchRect.width, searchRect.height, position.x, position.y);
-            writer.Put(eventCode);
-            writer.Put(m_writer.Data, 0, m_writer.Length);
-            peer.Send(writer, deliveryMethod);
+                //Debug.LogFormat("From {0} - Search Rect {1},{2} {3},{4} - Position {5},{6}", "Client", searchRect.x, searchRect.x, searchRect.width, searchRect.height, position.x, position.y);
+                writer.Put(eventCode);
+                writer.Put(m_writer.Data, 0, m_writer.Length);
+                if (peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
+                {
+                    Debug.LogError("Packet data is too large. Switching to ReliableOrdered method");
+                    deliveryMethod = DeliveryMethod.ReliableOrdered;
+                }
+                peer.Send(writer, deliveryMethod);
 
-           
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// RaiseEventOnAll but with Quad tree optimizations
+    /// </summary>
+    /// <param name="eventCode"></param>
+    /// <param name="position of rect"></param>
+    /// <param name="extends of rect"></param>
+    /// <param name="rawData"></param>
+    /// <param name="deliveryMethod"></param>
+    /// <returns></returns>
+    public bool RaiseEventOnNearby(ushort eventCode, Vector2 position, float extends, byte [] rawData, DeliveryMethod deliveryMethod)
+    {
+        if (isConnected && isInActiveRoom)
+        {
+            lock (thelock)
+            {
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_TO_NEARBY_CLIENTS);
+
+                Rect searchRect = new Rect(Vector3.zero, new Vector2(extends * 2, extends * 2));
+                searchRect.center = position;
+                writer.Put(searchRect.x);
+                writer.Put(searchRect.y);
+                writer.Put(searchRect.size.x);
+                writer.Put(searchRect.size.y);
+
+                //Debug.LogFormat("From {0} - Search Rect {1},{2} {3},{4} - Position {5},{6}", "Client", searchRect.x, searchRect.x, searchRect.width, searchRect.height, position.x, position.y);
+                writer.Put(eventCode);
+                writer.Put(rawData);
+                if (peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
+                {
+                    Debug.LogError("Packet data is too large. Switching to ReliableOrdered method");
+                    deliveryMethod = DeliveryMethod.ReliableOrdered;
+                }
+                peer.Send(writer, deliveryMethod);
+            }
+
             return true;
         }
         return false;
@@ -525,6 +586,11 @@ public class LNSConnector : IDisposable
         return RaiseEventOnClient(client.networkID, eventCode, m_writer, deliveryMethod);
     }
 
+    public bool RaiseEventOnClient(LNSClient client, ushort eventCode, byte [] rawData, DeliveryMethod deliveryMethod)
+    {
+        return RaiseEventOnClient(client.networkID, eventCode, rawData, deliveryMethod);
+    }
+
     public bool RaiseEventOnMasterClient (ushort eventCode, LNSWriter m_writer, DeliveryMethod deliveryMethod)
     {
         if(isLocalPlayerMasterClient)
@@ -532,10 +598,25 @@ public class LNSConnector : IDisposable
             return false;
         }
 
-        var masterClient = clients.Find(client => client.id == _lastConnectedRoomMasterClientId);
+       
         if (masterClient != null)
         {
             return RaiseEventOnClient(masterClient.networkID, eventCode, m_writer, deliveryMethod);
+        }
+        return false;
+    }
+
+    public bool RaiseEventOnMasterClient(ushort eventCode, byte [] rawData, DeliveryMethod deliveryMethod)
+    {
+        if (isLocalPlayerMasterClient)
+        {
+            return false;
+        }
+
+       
+        if (masterClient != null)
+        {
+            return RaiseEventOnClient(masterClient.networkID, eventCode, rawData, deliveryMethod);
         }
         return false;
     }
@@ -544,23 +625,50 @@ public class LNSConnector : IDisposable
     {
         if (isConnected && isInActiveRoom)
         {
-
-            new Thread(() =>
+            
+            lock (thelock)
             {
-                lock (thelock)
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_TO_CLIENT);
+                writer.Put(clientNetId);
+                writer.Put(eventCode);
+                writer.Put(m_writer.Data, 0, m_writer.Length);
+                if (peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
                 {
-                    writer.Reset();
-                    writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_TO_CLIENT);
-                    writer.Put(clientNetId);
-                    writer.Put(eventCode);
-                    if (m_writer.Data.Length > 0)
-                    {
-                        writer.Put(m_writer.Data);
-                    }
-                    peer.Send(writer, deliveryMethod);
-                    //peer.Send(writer, deliveryMethod);
+                    Debug.LogError("Packet data is too large. Switching to ReliableOrdered method");
+                    deliveryMethod = DeliveryMethod.ReliableOrdered;
                 }
-            }).Start();
+                peer.Send(writer, deliveryMethod);
+                //peer.Send(writer, deliveryMethod);
+            }
+           
+            return true;
+        }
+        return false;
+    }
+
+    public bool RaiseEventOnClient(int clientNetId, ushort eventCode, byte [] rawData, DeliveryMethod deliveryMethod)
+    {
+        if (isConnected && isInActiveRoom)
+        {
+
+            //new Thread(() =>{
+            lock (thelock)
+            {
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_TO_CLIENT);
+                writer.Put(clientNetId);
+                writer.Put(eventCode);
+                writer.Put(rawData);
+                if (peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
+                {
+                    Debug.LogError("Packet data is too large. Switching to ReliableOrdered method");
+                    deliveryMethod = DeliveryMethod.ReliableOrdered;
+                }
+                peer.Send(writer, deliveryMethod);
+                //peer.Send(writer, deliveryMethod);
+            }
+            //}).Start();
             return true;
         }
         return false;
@@ -572,19 +680,19 @@ public class LNSConnector : IDisposable
         {
             if (isLocalPlayerMasterClient)
             {
-                new Thread(() =>
-                {
+                //new Thread(() =>{
                     lock (thelock)
                     {
                         writer.Reset();
                         writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_CACHE);
                         writer.Put(key);
-                        writer.Put(m_writer.Data);
-                       
+                        writer.Put(localClient.id);
+                        writer.Put(m_writer.Data,0, m_writer.Length);
+
                         peer.Send(writer, DeliveryMethod.ReliableOrdered);
-                        //peer.Send(writer, deliveryMethod);
+
                     }
-                }).Start();
+                //}).Start();
                 return true;
             }
             else
@@ -604,19 +712,19 @@ public class LNSConnector : IDisposable
         {
             if (isLocalPlayerMasterClient)
             {
-                new Thread(() =>
-                {
-                    lock (thelock)
-                    {
-                        writer.Reset();
-                        writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_CACHE);
-                        writer.Put(key);
-                        writer.Put(rawData);
 
-                        peer.Send(writer, DeliveryMethod.ReliableOrdered);
-                        //peer.Send(writer, deliveryMethod);
-                    }
-                }).Start();
+                lock (thelock)
+                {
+                    writer.Reset();
+                    writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_CACHE);
+                    writer.Put(key);
+                    writer.Put(localClient.id);
+                    writer.Put(rawData);
+
+                    peer.Send(writer, DeliveryMethod.ReliableOrdered);
+                    
+                }
+               
                 return true;
             }
             else
@@ -745,7 +853,9 @@ public class LNSConnector : IDisposable
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_MASTERCLIENT_CHANGED)
         {
             _lastConnectedRoomMasterClientId = packetReader.GetString();
-            localClient.isMasterClient = isLocalPlayerMasterClient = (_lastConnectedRoomMasterClientId == id);         
+            localClient.isMasterClient = isLocalPlayerMasterClient = (_lastConnectedRoomMasterClientId == id);
+
+            masterClient = clients.Find(client => client.id == _lastConnectedRoomMasterClientId);
             if (onMasterClientUpdated != null)
             {
                 try
@@ -842,10 +952,10 @@ public class LNSConnector : IDisposable
         }
         else if(clientInstruction == LNSConstants.CLIENT_EVT_ROOM_CACHE_DATA)
         {
-            LNSReader reader = LNSReader.GetFromPool();
             string key = packetReader.GetString();
+            string fromClientId = packetReader.GetString();
             byte[] data = packetReader.GetRemainingBytes();
-            reader.SetSource(data);
+            
 
             if(persistentData.ContainsKey(key))
             {
@@ -855,23 +965,25 @@ public class LNSConnector : IDisposable
             {
                 persistentData.Add(key, data);
             }
-
-            if (dataReceiver != null)
+            if (fromClientId != localClient.id)
             {
-                threadDispatcher.Add(() =>
+                if (dataReceiver != null)
                 {
-                    try
+                    threadDispatcher.Add(() =>
                     {
-                        dataReceiver.OnCachedDataReceived(key, reader);
-                    }
-                    catch (System.Exception ex)
-                    {
-                        Debug.LogError(ex.Message + " " + ex.StackTrace);
-                    }
-                    reader.Recycle();
+                        try
+                        {
+                            dataReceiver.OnCachedDataReceived(key,data);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogError(ex.Message + " " + ex.StackTrace);
+                        }
+                        
 
 
-                });
+                    });
+                }
             }
             
 

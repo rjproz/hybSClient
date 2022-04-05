@@ -45,6 +45,7 @@ public class LNSConnectSettings
         if (string.IsNullOrEmpty(gameKey))
         {
             gameKey = Application.identifier;
+            Debug.Log(gameKey);
         }
 
         if (string.IsNullOrEmpty(gameVersion))

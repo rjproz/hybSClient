@@ -1,7 +1,10 @@
 ﻿using UnityEngine;
 using LiteNetLib.Utils;
+using System.Collections.Generic;
+
 public class LNSWriter : NetDataWriter
 {
+    
 
     public void Put(Vector2 vector2)
     {
@@ -40,5 +43,39 @@ public class LNSWriter : NetDataWriter
         base.Put(color.a);
     }
 
-   
+
+
+
+
+    //Pool manager
+
+    public void Recycle()
+    {
+        PutIntoPool(this);
+    }
+
+    private static Queue<LNSWriter> pool = new Queue<LNSWriter>();
+    private static object theLock = new object();
+
+    public static LNSWriter GetFromPool()
+    {
+        lock (theLock)
+        {
+            if (pool.Count > 0)
+            {
+                return pool.Dequeue();
+            }
+            return new LNSWriter();
+        }
+    }
+
+    protected static void PutIntoPool(LNSWriter writer)
+    {
+        lock (theLock)
+        {
+            pool.Enqueue(writer);
+        }
+    }
+
+
 }

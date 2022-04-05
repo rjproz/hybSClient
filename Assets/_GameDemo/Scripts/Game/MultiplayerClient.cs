@@ -1,12 +1,11 @@
-﻿using System.Collections;
+﻿
 using System.Collections.Generic;
 using LiteNetLib;
-using LiteNetLib.Utils;
 using UnityEngine;
 
 public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
 {
-    
+   
     public MainPlayer player;
     public GameObject clonePrefab;
     public bool connectToLocalServer = false;
@@ -21,7 +20,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
 
     private void Awake()
     {
-       
+        
 
     }
     public void Initialize(string id)
@@ -231,7 +230,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
         connector.Disconnect();
     }
 
-    public void OnCachedDataReceived(string key, LNSReader data)
+    public void OnCachedDataReceived(string key, byte [] rawData)
     {
         
     }

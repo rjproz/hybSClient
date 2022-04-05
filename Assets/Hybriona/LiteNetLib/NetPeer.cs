@@ -549,6 +549,14 @@ namespace LiteNetLib
                            " totalPackets: {4}",
                     mtu, headerSize, packetFullSize, packetDataSize, totalPackets);
 
+                //UnityEngine.Debug.LogFormat("FragmentSend:\n" +
+                //          " MTU: {0}\n" +
+                //          " headerSize: {1}\n" +
+                //          " packetFullSize: {2}\n" +
+                //          " packetDataSize: {3}\n" +
+                //          " totalPackets: {4}",
+                //   mtu, headerSize, packetFullSize, packetDataSize, totalPackets);
+
                 if (totalPackets > ushort.MaxValue)
                     throw new TooBigPacketException("Data was split in " + totalPackets + " fragments, which exceeds " + ushort.MaxValue);
 
