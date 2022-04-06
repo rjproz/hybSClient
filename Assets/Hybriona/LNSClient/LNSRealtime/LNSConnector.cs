@@ -461,7 +461,8 @@ public class LNSConnector : IDisposable
                 writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_NOCACHE);
                 writer.Put(eventCode);
                 writer.Put(m_writer.Data, 0, m_writer.Length);
-                if (deliveryMethod != DeliveryMethod.ReliableOrdered && deliveryMethod != DeliveryMethod.ReliableUnordered && peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
+                if (deliveryMethod != DeliveryMethod.ReliableOrdered &&
+                    deliveryMethod != DeliveryMethod.ReliableUnordered && peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
                 {
                     Debug.LogError("Packet data is too large. Switching to ReliableOrdered method");
                     deliveryMethod = DeliveryMethod.ReliableOrdered;
@@ -485,7 +486,8 @@ public class LNSConnector : IDisposable
                 writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_NOCACHE);
                 writer.Put(eventCode);
                 writer.Put(rawData);
-                if (peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
+                if (deliveryMethod != DeliveryMethod.ReliableOrdered &&
+                   deliveryMethod != DeliveryMethod.ReliableUnordered && peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
                 {
                     Debug.LogError("Packet data is too large. Switching to ReliableOrdered method");
                     deliveryMethod = DeliveryMethod.ReliableOrdered;
@@ -525,7 +527,8 @@ public class LNSConnector : IDisposable
                 //Debug.LogFormat("From {0} - Search Rect {1},{2} {3},{4} - Position {5},{6}", "Client", searchRect.x, searchRect.x, searchRect.width, searchRect.height, position.x, position.y);
                 writer.Put(eventCode);
                 writer.Put(m_writer.Data, 0, m_writer.Length);
-                if (peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
+                if (deliveryMethod != DeliveryMethod.ReliableOrdered &&
+                    deliveryMethod != DeliveryMethod.ReliableUnordered && peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
                 {
                     Debug.LogError("Packet data is too large. Switching to ReliableOrdered method");
                     deliveryMethod = DeliveryMethod.ReliableOrdered;
@@ -566,7 +569,8 @@ public class LNSConnector : IDisposable
                 //Debug.LogFormat("From {0} - Search Rect {1},{2} {3},{4} - Position {5},{6}", "Client", searchRect.x, searchRect.x, searchRect.width, searchRect.height, position.x, position.y);
                 writer.Put(eventCode);
                 writer.Put(rawData);
-                if (peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
+                if (deliveryMethod != DeliveryMethod.ReliableOrdered &&
+                   deliveryMethod != DeliveryMethod.ReliableUnordered && peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
                 {
                     Debug.LogError("Packet data is too large. Switching to ReliableOrdered method");
                     deliveryMethod = DeliveryMethod.ReliableOrdered;
@@ -633,7 +637,8 @@ public class LNSConnector : IDisposable
                 writer.Put(clientNetId);
                 writer.Put(eventCode);
                 writer.Put(m_writer.Data, 0, m_writer.Length);
-                if (peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
+                if (deliveryMethod != DeliveryMethod.ReliableOrdered &&
+                   deliveryMethod != DeliveryMethod.ReliableUnordered && peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
                 {
                     Debug.LogError("Packet data is too large. Switching to ReliableOrdered method");
                     deliveryMethod = DeliveryMethod.ReliableOrdered;
@@ -660,7 +665,8 @@ public class LNSConnector : IDisposable
                 writer.Put(clientNetId);
                 writer.Put(eventCode);
                 writer.Put(rawData);
-                if (peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
+                if (deliveryMethod != DeliveryMethod.ReliableOrdered &&
+                   deliveryMethod != DeliveryMethod.ReliableUnordered && peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
                 {
                     Debug.LogError("Packet data is too large. Switching to ReliableOrdered method");
                     deliveryMethod = DeliveryMethod.ReliableOrdered;
