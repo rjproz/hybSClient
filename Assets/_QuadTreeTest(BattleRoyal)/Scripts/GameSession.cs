@@ -9,7 +9,7 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
     public string ip = "localhost";
     public int port = 10002;
     public Transform player;
-    public float searchExtends = 10;
+    
     public GameObject clonePrefab;
 
     public float dataTransferPerSec;
@@ -30,7 +30,7 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
         clonePrefab.SetActive(false);
         writer = new LNSWriter();
 
-        player.GetComponent<SphereGizmos>().radius = searchExtends;
+        
 
         if(name == "Client")
         {
@@ -70,6 +70,8 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
             roomParameters.idleLife = 60 * 24;
             roomParameters.EnableQuadTreeCellOptimization(Vector2.zero,new Vector2(2000,2000));
             connector.CreateRoom("default", roomParameters);
+
+            
         };
 
         connector.onFailedToConnect = (CONNECTION_FAILURE_CODE code) =>
@@ -89,7 +91,7 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
 
         connector.onRoomCreateFailed = (ROOM_FAILURE_CODE code) =>
         {
-            Debug.LogError(name + " - " + code);
+            //Debug.LogError(name + " - " + code);
             if (code == ROOM_FAILURE_CODE.ROOM_ALREADY_EXIST)
             {
                 connector.JoinRoom("default");
@@ -162,7 +164,7 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
                 Vector3 playerPos = player.localPosition;
                 writer.Reset();
                 writer.Put(playerPos);
-                connector.RaiseEventOnNearby(0, new Vector2(playerPos.x, playerPos.z), searchExtends, writer, DeliveryMethod.Sequenced);
+                connector.RaiseEventOnNearby(0, new Vector2(playerPos.x, playerPos.z), ClientPopulator.Instance.searchExtends, writer, DeliveryMethod.Sequenced);
             }
             //connector.RaiseEventOnAll(0, writer, DeliveryMethod.Sequenced);
         }
