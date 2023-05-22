@@ -235,7 +235,7 @@ public class LNSManager : MonoBehaviour,ILNSDataReceiver
 
     public static void RaiseEventOnAll(ushort eventCode, LNSWriter writer, DeliveryMethod deliveryMethod = DeliveryMethod.ReliableOrdered)
     {
-        if(eventCode < 10)
+        if(eventCode <= 10)
         {
             throw new System.Exception("Eventcode 0-10 is reserved for internal use");
         }
@@ -244,7 +244,7 @@ public class LNSManager : MonoBehaviour,ILNSDataReceiver
 
     public static void RaiseEventOnClient(LNSClient client, ushort eventCode, LNSWriter writer, DeliveryMethod deliveryMethod = DeliveryMethod.ReliableOrdered)
     {
-        if (eventCode == 10)
+        if (eventCode <= 10)
         {
             throw new System.Exception("Eventcode 0-10 is reserved for internal use");
         }
@@ -253,7 +253,7 @@ public class LNSManager : MonoBehaviour,ILNSDataReceiver
 
     public static void RaiseEventOnMasterClient(ushort eventCode, LNSWriter writer, DeliveryMethod deliveryMethod = DeliveryMethod.ReliableOrdered)
     {
-        if (eventCode == 10)
+        if (eventCode <= 10)
         {
             throw new System.Exception("Eventcode 0-10 is reserved for internal use");
         }
@@ -262,7 +262,7 @@ public class LNSManager : MonoBehaviour,ILNSDataReceiver
 
     public static void RaiseEventOnMasterClient(ushort eventCode,Vector2 position, float extends, LNSWriter writer, DeliveryMethod deliveryMethod = DeliveryMethod.ReliableOrdered)
     {
-        if (eventCode == 10)
+        if (eventCode <= 10)
         {
             throw new System.Exception("Eventcode 0-10 is reserved for internal use");
         }
@@ -312,7 +312,7 @@ public class LNSManager : MonoBehaviour,ILNSDataReceiver
                     DATA_WRITER.Put(currentTransmitter.instanceId);
                     currentTransmitter.Write(DATA_WRITER);
                     m_connector.RaiseEventOnAll(0, DATA_WRITER, currentTransmitter.deliveryMethod);
-                }
+                }   
             }
         }
     }
