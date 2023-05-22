@@ -60,7 +60,9 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
             Debug.Log("Masterclient changed to " + client.id);
 
         };
-       
+
+        
+        
     }
 
     public void EventsDoc()
@@ -102,6 +104,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
                 //writer.Put(System.DateTime.Now.ToFileTimeUtc());
                 //Debug.Log(writer.Length);
                 connector.RaiseEventOnAll(1, writer, DeliveryMethod.Unreliable);
+                
             }
 
         }

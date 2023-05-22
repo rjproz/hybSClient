@@ -41,13 +41,11 @@ public class LNSManager : MonoBehaviour,ILNSDataReceiver
     
     #region Public Methods
 
-    public static void Initialize(LNSClientParameters clientParameters,ILNSManagerDataReceiver dataReceiver)
+    public static void Initialize(LNSClientParameters clientParameters, LNSConnectSettings connectSettings,ILNSManagerDataReceiver dataReceiver)
     {
         Instance.m_connector = null;
         Instance.dataReceiver = dataReceiver;
-        LNSConnectSettings connectSettings = new LNSConnectSettings();
-        connectSettings.serverSecurityKey = "iamatestserver";
-        connectSettings.gameKey = "com.hybriona.horrorfps";
+     
         Instance.m_connector = new LNSConnector(clientParameters, connectSettings, Instance);
 
         if (DATA_WRITER != null)
@@ -68,6 +66,11 @@ public class LNSManager : MonoBehaviour,ILNSDataReceiver
         Instance.serverIP = serverIP;
         Instance.serverPort = serverPort;
         Instance.m_connector.Connect(Instance.serverIP, Instance.serverPort);
+    }
+
+    public static void Connect()
+    {
+        Instance.m_connector.Connect();
     }
 
     public static void RegisterSyncTransmitter(LNSBaseNetSync transmitter)
