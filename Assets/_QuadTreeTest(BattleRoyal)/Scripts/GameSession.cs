@@ -27,6 +27,7 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
     private float timeDataCountStarted = 0;
     public void StartProcess(string id)
     {
+        StartCoroutine(DataTransferSpeedCalculator());
         clonePrefab.SetActive(false);
         writer = new LNSWriter();
 
@@ -110,6 +111,18 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
     }
 
 
+    IEnumerator DataTransferSpeedCalculator()
+    {
+        WaitForSeconds waitForSeconds = new WaitForSeconds(2);
+        while(true)
+        {
+            timeDataCountStarted = Time.realtimeSinceStartup;
+            yield return waitForSeconds;
+            dataTransferPerSec = (float)totalDataTransfered / (Time.realtimeSinceStartup - timeDataCountStarted);
+            totalDataTransfered = 0;
+        }
+    }
+
     IEnumerator RandomMovement()
     {
         while(true)
@@ -131,12 +144,12 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
     public void OnEventRaised(LNSClient from, ushort eventCode, LNSReader reader, DeliveryMethod deliveryMethod)
     {
         totalDataTransfered += reader.RawDataSize;
-        if (Time.time - timeDataCountStarted > 1)
-        {
-            dataTransferPerSec = (float)totalDataTransfered / (Time.time - timeDataCountStarted);
-            timeDataCountStarted = Time.time;
-            totalDataTransfered = 0;
-        }
+        //if (Time.time - timeDataCountStarted > 1)
+        //{
+        //    dataTransferPerSec = (float)totalDataTransfered / (Time.time - timeDataCountStarted);
+        //    timeDataCountStarted = Time.time;
+        //    totalDataTransfered = 0;
+        //}
         if(eventCode == 0)
         {
 
