@@ -4,6 +4,7 @@
 [Bb]uilds/
 [Ll]ibrary/*
 Ignore/*
+Logs/
 Assets/_HappyGamesApp/Delete/*
 Assets/AssetStoreTools*
 Recordings/*
