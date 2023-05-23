@@ -132,24 +132,13 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
             
             yield return new WaitForSeconds(Random.Range(2f, 5f));
 
-            if(connector.isLocalPlayerMasterClient)
-            {
-                //writer.Reset();
-                //writer.Put("nanhi hai suhani @"+Time.time);
-                //connector.SendCachedDataToAll("key3", writer);
-            }
         }
     }
 
     public void OnEventRaised(LNSClient from, ushort eventCode, LNSReader reader, DeliveryMethod deliveryMethod)
     {
         totalDataTransfered += reader.RawDataSize;
-        //if (Time.time - timeDataCountStarted > 1)
-        //{
-        //    dataTransferPerSec = (float)totalDataTransfered / (Time.time - timeDataCountStarted);
-        //    timeDataCountStarted = Time.time;
-        //    totalDataTransfered = 0;
-        //}
+       
         if(eventCode == 0)
         {
 
@@ -179,7 +168,7 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
                 writer.Put(playerPos);
                 connector.RaiseEventOnNearby(0, new Vector2(playerPos.x, playerPos.z), ClientPopulator.Instance.searchExtends, writer, DeliveryMethod.Sequenced);
             }
-            //connector.RaiseEventOnAll(0, writer, DeliveryMethod.Sequenced);
+         
         }
         if (Vector3.Distance(player.localPosition, playerTarget) > 0.5f)
         {
