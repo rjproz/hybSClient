@@ -97,12 +97,14 @@ public class LNSConnector : IDisposable
         //List to receiveEvent
         listener.PeerConnectedEvent += Listener_PeerConnectedEvent;
         listener.PeerDisconnectedEvent += Listener_PeerDisconnectedEvent;
-        listener.NetworkReceiveEvent += Listener_NetworkReceiveEvent;
+        listener.NetworkReceiveEvent += Listener_NetworkReceiveEvent; ;
        
         listener.NetworkErrorEvent += Listener_NetworkErrorEvent;
         listener.NetworkReceiveUnconnectedEvent += Listener_NetworkReceiveUnconnectedEvent;
 
     }
+
+   
 
     ~LNSConnector()
     {
@@ -771,7 +773,7 @@ public class LNSConnector : IDisposable
     //}
 
 
-    private void Listener_NetworkReceiveEvent(NetPeer peer, NetPacketReader packetReader, DeliveryMethod deliveryMethod)
+    private void Listener_NetworkReceiveEvent(NetPeer peer, NetPacketReader packetReader,byte channel, DeliveryMethod deliveryMethod)
     {
         byte clientInstruction = packetReader.GetByte();
 
