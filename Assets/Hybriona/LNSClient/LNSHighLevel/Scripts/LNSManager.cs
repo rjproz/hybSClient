@@ -73,6 +73,8 @@ public class LNSManager : MonoBehaviour,ILNSDataReceiver
         Instance.m_connector.Connect();
     }
 
+   
+
     public static void RegisterSyncTransmitter(LNSBaseNetSync transmitter)
     {
         if (!isInitialized)

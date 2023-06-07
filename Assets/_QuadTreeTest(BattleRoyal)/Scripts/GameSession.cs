@@ -68,7 +68,7 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
             LNSCreateRoomParameters roomParameters = new LNSCreateRoomParameters();
             roomParameters.maxPlayers = 1000;
             roomParameters.isQuadTreeAllowed = true;
-            roomParameters.idleLife = 60 * 24;
+            roomParameters.idleLife = 1;
             roomParameters.EnableQuadTreeCellOptimization(Vector2.zero,new Vector2(2000,2000));
             connector.CreateRoom("default", roomParameters);
 
@@ -107,9 +107,19 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
         {
             Debug.LogError(name + " - " + code);
         };
+
+        connector.onMasterClientUpdated = (client) =>
+        {
+            Debug.Log("Masterclient changed to "+client.id);
+        };
         connector.Connect();
     }
 
+    [ContextMenu("Make me master server")]
+    public void MakeMeMasterServer()
+    {
+        connector.MakeMeMasterClient();
+    }
 
     IEnumerator DataTransferSpeedCalculator()
     {

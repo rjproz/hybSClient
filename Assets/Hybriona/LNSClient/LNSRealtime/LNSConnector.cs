@@ -746,6 +746,21 @@ public class LNSConnector : IDisposable
 
     }
 
+    public bool MakeMeMasterClient()
+    {
+        if (isConnected && isInActiveRoom)
+        {
+            lock (thelock)
+            {
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_MAKE_ME_MASTERCLIENT);
+                peer.Send(writer, DeliveryMethod.ReliableOrdered);
+
+            }
+            return true;
+        }
+        return false;
+    }
 
     public void DisconnectFromRoom()
     {
