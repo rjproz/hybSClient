@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+
 public class TreeNetwork : MonoBehaviour
 {
     // Start is called before the first frame update
@@ -20,6 +21,19 @@ public class TreeNetwork : MonoBehaviour
         canGrow = true;
 
         StartCoroutine(SendData());
+    }
+
+    
+    [ContextMenu("DeleteTree")]
+    public void DeleteTree()
+    {
+        if(commonWriter == null)
+        {
+            commonWriter = new LNSWriter();
+        }
+        commonWriter.Reset();
+        commonWriter.Put(id);
+        LNSManager.RaiseEventOnMasterClient(13, commonWriter, LiteNetLib.DeliveryMethod.ReliableOrdered);
     }
 
     IEnumerator SendData()

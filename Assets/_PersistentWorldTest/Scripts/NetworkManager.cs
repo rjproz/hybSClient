@@ -15,13 +15,33 @@ public class NetworkManager : MonoBehaviour,ILNSManagerDataReceiver
     public void Awake()
     {
         treePrefab.SetActive(false);
-
-#if UNITY_SERVER 
+        Application.targetFrameRate = 60;
+        //StartCoroutine(TestLerp());
+#if UNITY_SERVER && !UNITY_EDITOR
         isServer = true;
         Application.targetFrameRate = 10;
 #endif
     }
 
+    public float to = 30;
+    public float current;
+    public float speed = .1f;
+    public float timeCompleted;
+    IEnumerator TestLerp()
+    {
+        float timeStarted = Time.realtimeSinceStartup;
+        while(true)
+        {
+            yield return null;
+
+            current = current + speed * Time.deltaTime;
+            if(current > to)
+            {
+                timeCompleted = Time.realtimeSinceStartup - timeStarted;
+                yield break;
+            }
+        }
+    }
 
      
     [ContextMenu("Plant At Hud")]
@@ -162,5 +182,24 @@ public class NetworkManager : MonoBehaviour,ILNSManagerDataReceiver
         LNSManager.Connect();
     }
 
-   
+
+    private void Update()
+    {
+        if(!isServer)
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                RaycastHit hitInfo;
+                if (Physics.Raycast(ray, out hitInfo))
+                {
+                    if (hitInfo.collider.gameObject.name == "Plane")
+                    {
+                        PlantTreeAt(hitInfo.point);
+                    }
+                }
+            }
+        }
+    }
+
 }
