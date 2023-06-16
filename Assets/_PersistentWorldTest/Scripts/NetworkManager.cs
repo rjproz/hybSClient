@@ -11,7 +11,7 @@ public class NetworkManager : MonoBehaviour,ILNSManagerDataReceiver
     public Transform plantHud;
     private Dictionary<string, TreeNetwork> trees = new Dictionary<string, TreeNetwork>();
 
-    
+   
     public void Awake()
     {
         treePrefab.SetActive(false);
@@ -53,9 +53,13 @@ public class NetworkManager : MonoBehaviour,ILNSManagerDataReceiver
 
     public void PlantTreeAt(Vector3 pos)
     {
+
+        
+
         LNSWriter writer = LNSWriter.GetFromPool();
         writer.Reset();
         writer.Put(pos);
+        
         LNSManager.RaiseEventOnMasterClient(12, writer, DeliveryMethod.ReliableOrdered);
         writer.Recycle();
     }
@@ -106,6 +110,7 @@ public class NetworkManager : MonoBehaviour,ILNSManagerDataReceiver
         }
         else if(eventCode == 11)
         {
+            
             var id = reader.GetString();
             var pos = reader.GetVector3();
             var scale = reader.GetVector3();
@@ -117,6 +122,7 @@ public class NetworkManager : MonoBehaviour,ILNSManagerDataReceiver
             }
             else
             {
+               
                 var tree = Instantiate(treePrefab);
                 tree.transform.position = pos;
                 tree.SetActive(true);
@@ -132,6 +138,14 @@ public class NetworkManager : MonoBehaviour,ILNSManagerDataReceiver
         }
     }
 
+
+    public string roomToCheck;
+    [ContextMenu("RoomToCheck")]
+    private void CheckIfRoomExists()
+    {
+        LNSManager.connector.QueryIfRoomExists(roomToCheck);
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -139,6 +153,7 @@ public class NetworkManager : MonoBehaviour,ILNSManagerDataReceiver
         LNSConnectSettings connectSettings = new LNSConnectSettings();
        
         connectSettings.serverIp = "45.55.33.88";
+        //connectSettings.serverIp = "localhost";
         connectSettings.serverPort = 10002;
         connectSettings.serverSecurityKey = ServerKey.GetKey();
         connectSettings.gameKey = "hybriona.persistent_world";
@@ -153,21 +168,7 @@ public class NetworkManager : MonoBehaviour,ILNSManagerDataReceiver
             {
                 Debug.Log("I am server");
                 LNSManager.connector.MakeMeMasterClient();
-                //for (int i = 0; i < 10; i++)
-                //{
-                //    var tree = Instantiate(treePrefab);
-                //    tree.transform.position = new Vector3(Random.Range(-40, 40), 0, Random.Range(-40, 40));
-                //    tree.SetActive(true);
-
-                //    var treeScript = tree.GetComponent<TreeNetwork>();
-                //    treeScript.id = LNSManager.GenerateNextId();
-                //    treeScript.StartGrow();
-
-
-                //    trees.Add(treeScript.id, treeScript);
-
-
-                //}
+               
             }
         };
         LNSManager.connector.onRoomCreated = ()=> roomAction();
@@ -176,7 +177,13 @@ public class NetworkManager : MonoBehaviour,ILNSManagerDataReceiver
         {
             Debug.Log("Connected");
 
-            LNSManager.connector.JoinRoomOrCreateIfNotExist("default");
+            //LNSManager.connector.JoinRoomOrCreateIfNotExist("default");
+        };
+
+
+        LNSManager.connector.onRoomExistsResponse = (roomId, exists) =>
+        {
+            Debug.Log(roomId + " Room Exists? " + exists);
         };
 
         LNSManager.Connect();

@@ -8,6 +8,7 @@ public delegate void OnDisconnected();
 
 public delegate void OnRoomListReceived(LNSRoomList roomList);
 
+public delegate void OnRoomExistsResponse(string roomId, bool exists);
 public delegate void OnRoomCreated();
 public delegate void OnRoomJoined();
 public delegate void OnRoomRejoined();
