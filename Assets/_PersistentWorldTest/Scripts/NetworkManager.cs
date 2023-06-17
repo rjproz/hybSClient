@@ -177,7 +177,7 @@ public class NetworkManager : MonoBehaviour,ILNSManagerDataReceiver
         {
             Debug.Log("Connected");
 
-            //LNSManager.connector.JoinRoomOrCreateIfNotExist("default");
+            LNSManager.connector.JoinRoomOrCreateIfNotExist("default");
         };
 
 
