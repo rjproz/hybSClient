@@ -139,12 +139,6 @@ public class NetworkManager : MonoBehaviour,ILNSManagerDataReceiver
     }
 
 
-    public string roomToCheck;
-    [ContextMenu("RoomToCheck")]
-    private void CheckIfRoomExists()
-    {
-        LNSManager.connector.QueryIfRoomExists(roomToCheck);
-    }
 
     // Start is called before the first frame update
     void Start()
@@ -177,13 +171,24 @@ public class NetworkManager : MonoBehaviour,ILNSManagerDataReceiver
         {
             Debug.Log("Connected");
 
-            LNSManager.connector.JoinRoomOrCreateIfNotExist("default");
+            //LNSManager.connector.JoinRoomOrCreateIfNotExist("default");
+            LNSManager.connector.QueryIfRoomExists("default");
         };
 
 
         LNSManager.connector.onRoomExistsResponse = (roomId, exists) =>
         {
             Debug.Log(roomId + " Room Exists? " + exists);
+            if(exists)
+            {
+                LNSManager.connector.JoinRoom("default");
+            }
+            else
+            {
+                LNSCreateRoomParameters roomParameters = new LNSCreateRoomParameters();
+                roomParameters.idleLife = 1;
+                LNSManager.connector.CreateRoom("default", roomParameters);
+            }
         };
 
         LNSManager.Connect();
