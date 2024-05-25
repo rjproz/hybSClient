@@ -37,6 +37,10 @@ public class LNSConnectSettings
         {
             platform = (byte)CLIENT_PLATFORM.IOS;
         }
+        else if (runtimePlatform == RuntimePlatform.WebGLPlayer)
+        {
+            platform = (byte)CLIENT_PLATFORM.WEBGL;
+        }
 
 #if UNITY_EDITOR
         platform = (byte)CLIENT_PLATFORM.UNITY_EDITOR;

@@ -6,6 +6,7 @@ using UnityEngine.UI;
 public class MultiplayerCCUTest : MonoBehaviour
 {
     // Start is called before the first frame update
+    public bool local;
     public int ccu;
     public Text messageText;
 
@@ -18,7 +19,12 @@ public class MultiplayerCCUTest : MonoBehaviour
         string idoffset = Random.Range(1, 999999)+"" + Random.Range(1, 999999); 
         for(int i=0;i<ccu;i++)
         {
-            FakeClient client = new FakeClient("45.55.33.88", 10002, string.Format("Agent {0}_{1}", idoffset,(i + 1)));
+            string ip = "45.55.33.88";
+            if(local)
+            {
+                ip = "localhost";
+            }
+            FakeClient client = new FakeClient(ip, 10002, string.Format("Agent {0}_{1}", idoffset,(i + 1)));
             clients.Add(client);
             if (i % 10 == 0)
             {
