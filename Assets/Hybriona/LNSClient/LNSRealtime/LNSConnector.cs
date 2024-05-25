@@ -315,7 +315,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                   
 
                     Debug.Log("Reconnecting: Begin "+i);
-#if !UNITY_EDITOR
+#if !UNITY_WEBGL
                     client.TriggerUpdate();
                     peer = client.Connect(_lastconnectedIP, _lastconnectedPort, clientDataWriter);
                     while (peer.ConnectionState == ConnectionState.Outgoing)

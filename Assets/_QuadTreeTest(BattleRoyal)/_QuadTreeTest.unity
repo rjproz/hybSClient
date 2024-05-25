@@ -693,7 +693,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7a3b4e1caf214ec3a99f50d7bf71795, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  useLive: 0
+  useLive: 1
   liveip: vps.hybriona.com
   ip: localhost
   port: 10002
