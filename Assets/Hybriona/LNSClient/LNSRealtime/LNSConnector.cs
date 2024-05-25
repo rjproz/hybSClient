@@ -23,6 +23,7 @@ public class LNSConnector : IDisposable
     public OnFailedToConnect onFailedToConnect;
     public OnDisconnected onDisconnected;
 
+    public OnRoomExistsResponse onRoomExistsResponse;
     public OnRoomListReceived onRoomListReceived;
     public OnRoomCreated onRoomCreated;
     public OnRoomJoined onRoomJoined;
@@ -97,12 +98,14 @@ public class LNSConnector : IDisposable
         //List to receiveEvent
         listener.PeerConnectedEvent += Listener_PeerConnectedEvent;
         listener.PeerDisconnectedEvent += Listener_PeerDisconnectedEvent;
-        listener.NetworkReceiveEvent += Listener_NetworkReceiveEvent;
+        listener.NetworkReceiveEvent += Listener_NetworkReceiveEvent; ;
        
         listener.NetworkErrorEvent += Listener_NetworkErrorEvent;
         listener.NetworkReceiveUnconnectedEvent += Listener_NetworkReceiveUnconnectedEvent;
 
     }
+
+   
 
     ~LNSConnector()
     {
@@ -273,6 +276,23 @@ public class LNSConnector : IDisposable
     public bool FetchRoomList()
     {
         return FetchRoomList(currentRoomFilter);
+    }
+
+    public bool QueryIfRoomExists(string roomdId)
+    {
+        if(isConnected && !isInActiveRoom)
+        {
+            lock (thelock)
+            {
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_ROOM_EXIST_QUERY);
+                writer.Put(roomdId);
+                peer.Send(writer, DeliveryMethod.ReliableOrdered);
+            }
+            return true;
+        }
+
+        return false;
     }
 
     public bool FetchRoomList(LNSJoinRoomFilter filter)
@@ -744,6 +764,21 @@ public class LNSConnector : IDisposable
 
     }
 
+    public bool MakeMeMasterClient()
+    {
+        if (isConnected && isInActiveRoom)
+        {
+            lock (thelock)
+            {
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_MAKE_ME_MASTERCLIENT);
+                peer.Send(writer, DeliveryMethod.ReliableOrdered);
+
+            }
+            return true;
+        }
+        return false;
+    }
 
     public void DisconnectFromRoom()
     {
@@ -771,7 +806,7 @@ public class LNSConnector : IDisposable
     //}
 
 
-    private void Listener_NetworkReceiveEvent(NetPeer peer, NetPacketReader packetReader, DeliveryMethod deliveryMethod)
+    private void Listener_NetworkReceiveEvent(NetPeer peer, NetPacketReader packetReader,byte channel, DeliveryMethod deliveryMethod)
     {
         byte clientInstruction = packetReader.GetByte();
 
@@ -855,6 +890,21 @@ public class LNSConnector : IDisposable
             {
                 threadDispatcher.Add(() => onRandomRoomJoinFailed());
             }
+        }
+        else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_EXISTS_RESPONSE)
+        {
+            string roomId = packetReader.GetString();
+            bool roomExists = packetReader.GetBool();
+
+            if(onRoomExistsResponse != null)
+            {
+                threadDispatcher.Add(() => onRoomExistsResponse(roomId,roomExists));
+            }
+            //_lastConnectedRoom = packetReader.GetString();
+            //if (onRoomRejoined != null)
+            //{
+            //    threadDispatcher.Add(() => onRoomRejoined());
+            //}
         }
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_MASTERCLIENT_CHANGED)
         {
