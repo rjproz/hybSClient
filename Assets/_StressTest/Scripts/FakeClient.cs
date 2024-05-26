@@ -33,13 +33,24 @@ public class FakeClient : ILNSDataReceiver
             connector.JoinRoomOrCreateIfNotExist("test", 10000);
         };
 
+        if (id.Contains("_10"))
+        {
+
+
+            connector.onPlayerConnected += (cClient) =>
+            {
+                
+                Debug.Log(cClient.id + " connected");
+            };
+        }
         connector.Connect();
     }
 
     public void SendData()
     {
+        //Debug.Log("connector.isConnected : " + connector.isConnected + " | connector.isInActiveRoom: " + connector.isInActiveRoom);
         writer.Reset();
-        writer.Put("Message from " + id + " at "+ System.DateTime.Now.ToString());
+        writer.Put("Message from " + id + " at " +  System.DateTime.Now.ToString("dddd, dd MMMM yyyy HH:mm:ss"));
         connector.RaiseEventOnAll(0, writer, DeliveryMethod.ReliableOrdered);
     }
 

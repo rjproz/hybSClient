@@ -85,7 +85,10 @@ namespace Mirror.SimpleWeb
         }
 
         [MonoPInvokeCallback(typeof(Action<int>))]
-        static void OpenCallback(int index) => instances[index].onOpen();
+        static void OpenCallback(int index){
+            UnityEngine.Debug.Log("RJPROz OpenCallback "+index);
+            instances[index].onOpen();
+        }
 
         [MonoPInvokeCallback(typeof(Action<int>))]
         static void CloseCallBack(int index) => instances[index].onClose();

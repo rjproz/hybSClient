@@ -19,7 +19,7 @@ public class MultiplayerCCUTest : MonoBehaviour
         string idoffset = Random.Range(1, 999999)+"" + Random.Range(1, 999999); 
         for(int i=0;i<ccu;i++)
         {
-            string ip = "45.55.33.88";
+            string ip = "vps.hybriona.com";
             if(local)
             {
                 ip = "localhost";
@@ -46,6 +46,7 @@ public class MultiplayerCCUTest : MonoBehaviour
         }
 
 
+       
         receiver.messageReceiver += (string message) =>
         {
             messageText.text = message;

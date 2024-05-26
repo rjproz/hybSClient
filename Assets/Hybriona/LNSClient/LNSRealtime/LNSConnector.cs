@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using LiteNetLib;
@@ -104,8 +105,10 @@ public class LNSConnector : IDisposable
 
 
 #if UNITY_WEBGL
+        //https://stackoverflow.com/questions/10175812/how-to-generate-a-self-signed-ssl-certificate-using-openssl
         var tcpConfig = new TcpConfig(true, 0, 0);
         websocketClient = SimpleWebClient.Create(16 * 1024,3000, tcpConfig);
+        
         websocketClient.onConnect += WebsocketClient_onConnect;
         websocketClient.onData += WebsocketClient_onData;
         websocketClient.onDisconnect += WebsocketClient_onDisconnect;
@@ -152,7 +155,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
 
     private void WebsocketClient_onData(ArraySegment<byte> data)
     {
-        
+       
         if (data[0] == LNSConstants.CLIENT_EVT_VERIFIED)
         {
             localClient.isConnected = isConnected = true;
@@ -174,7 +177,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
 
     private void WebsocketClient_onConnect()
     {
-
+        Debug.Log("WebsocketClient_onConnect");
         websocketClient.Send(new ArraySegment<byte>(clientDataWriter.Data,0, clientDataWriter.Length));
 
         
@@ -234,8 +237,12 @@ EventBasedNetListener listener = new EventBasedNetListener();
         //new Thread(() =>{
 
 #if UNITY_WEBGL
+        if (webGLLooper == null)
+        {
+            webGLLooper = threadDispatcher.StartCoroutine(StartUpdateLoopWebGL());
+        }
         websocketClient.Connect(new Uri("ws://" + ip + ":" + (port + 1)));
-        StartUpdateLoop();
+        
 
 #else
         client.Start();
@@ -248,22 +255,26 @@ EventBasedNetListener listener = new EventBasedNetListener();
         return true;
     }
 
-    protected void StartUpdateLoop()
-    {
 #if UNITY_WEBGL
+    private Coroutine webGLLooper;
+    IEnumerator StartUpdateLoopWebGL()
+    {
+
         if (websocketClient != null)
         {
-            new Thread(() =>
+            while (true)
             {
-                while (true)
-                {
-                    websocketClient.ProcessMessageQueue();
-                    Thread.Sleep(15);
-                }
-
-            }).Start();
+                //Debug.Log("websocketClient.ProcessMessageQueue");
+                websocketClient.ProcessMessageQueue();
+                yield return null;
+            }
         }
+
+    }
 #else
+    protected void StartUpdateLoop()
+    {
+
         if (client.IsRunning)
         {
             new Thread(() =>
@@ -280,10 +291,10 @@ EventBasedNetListener listener = new EventBasedNetListener();
 
             }).Start();
         }
-#endif
+
 
     }
-
+#endif
 #if !UNITY_WEBGL
     public int GetMaxSinglePacketSize(DeliveryMethod deliveryMethod)
     {
@@ -299,7 +310,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
     }
 #endif
 
-    public bool ReconnectAndRejoin(int retries = 20, string roomid = null)
+        public bool ReconnectAndRejoin(int retries = 20, string roomid = null)
     {
         if(!string.IsNullOrEmpty(roomid))
         {
@@ -643,6 +654,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 }
                 peer.Send(writer, deliveryMethod);
 #endif
+               
 
 
             }
@@ -1257,7 +1269,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                     LNSClient fromClient = currentClient;
                     DeliveryMethod _deliveryMethod = deliveryMethod;
 
-                    subReader.SetSource(reader.RawData,reader.Position, reader.UserDataSize);
+                    subReader.SetSource(reader.RawData,reader.Position, reader.RawDataSize);
 
                     threadDispatcher.Add(() =>
                     {
@@ -1287,7 +1299,8 @@ EventBasedNetListener listener = new EventBasedNetListener();
     private void Listener_NetworkReceiveEvent(NetPeer peer, NetPacketReader packetReader,byte channel, DeliveryMethod deliveryMethod)
     {
         LNSReader reader = LNSReader.GetFromPool();
-        reader.SetSource(packetReader.RawData, packetReader.UserDataOffset, packetReader.UserDataSize);
+        reader.SetSource(packetReader.RawData, packetReader.Position, packetReader.RawDataSize);
+        ProcessReceivedData(reader, deliveryMethod);
         packetReader.Recycle();
     }
 
@@ -1380,7 +1393,6 @@ EventBasedNetListener listener = new EventBasedNetListener();
 
     private void Listener_PeerConnectedEvent(NetPeer peer)
     {
-        Debug.Log(peer.EndPoint);
         localClient.isConnected = isConnected = true;
         if(onConnected != null)
         {
