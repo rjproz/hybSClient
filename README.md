@@ -1,6 +1,9 @@
 # hybSClient: Multiplayer Client for Unity
 
 The client is being build using [LiteNetLib](https://github.com/RevenantX/LiteNetLib). 
+For WebGL, a modified version of [SimpleWebTransport](https://github.com/MirrorNetworking/SimpleWebTransport) is used.
+
+Supports Windows, Mac, iOS, Android and WebGL.
 
 Also, **hybSServer** repo can be found [here](https://github.com/rjproz/hybSServer)
 
