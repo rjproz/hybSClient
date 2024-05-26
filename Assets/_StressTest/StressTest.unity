@@ -584,8 +584,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5255301144178402ab22d7ae65e924e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  local: 1
-  ccu: 50
+  local: 0
+  ccu: 11
   messageText: {fileID: 1032842737}
 --- !u!1 &1676970232
 GameObject:

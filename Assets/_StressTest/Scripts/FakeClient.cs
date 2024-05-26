@@ -50,15 +50,21 @@ public class FakeClient : ILNSDataReceiver
     {
         //Debug.Log("connector.isConnected : " + connector.isConnected + " | connector.isInActiveRoom: " + connector.isInActiveRoom);
         writer.Reset();
-        writer.Put("Message from " + id + " at " +  System.DateTime.Now.ToString("dddd, dd MMMM yyyy HH:mm:ss"));
-        connector.RaiseEventOnAll(0, writer, DeliveryMethod.ReliableOrdered);
+        writer.Put("Message from " + id + " at " +  System.DateTime.Now.ToString());
+        connector.RaiseEventOnAll(15, writer, DeliveryMethod.ReliableOrdered);
     }
 
     public void OnEventRaised(LNSClient from, ushort eventCode, LNSReader reader, DeliveryMethod deliveryMethod)
     {
         if(messageReceiver != null)
         {
-            messageReceiver(reader.GetString());
+            if(eventCode != 15)
+            {
+                Debug.Log("Wrong event code "+eventCode);
+            }
+            
+            //Debug.Log(reader.AvailableBytes + " "+reader.PeekUShort());
+            messageReceiver( reader.GetString());
         }
     }
 

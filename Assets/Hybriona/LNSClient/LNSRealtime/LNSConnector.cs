@@ -241,13 +241,13 @@ EventBasedNetListener listener = new EventBasedNetListener();
         {
             webGLLooper = threadDispatcher.StartCoroutine(StartUpdateLoopWebGL());
         }
-        websocketClient.Connect(new Uri("ws://" + ip + ":" + (port + 1)));
+        websocketClient.Connect(new Uri("wss://" + ip + ":" + (port + 1)));
         
 
 #else
         client.Start();
-            StartUpdateLoop();
-            peer = client.Connect(ip, port, clientDataWriter);
+        StartUpdateLoop();
+        peer = client.Connect(ip, port, clientDataWriter);
 #endif
 
 
@@ -310,7 +310,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
     }
 #endif
 
-        public bool ReconnectAndRejoin(int retries = 20, string roomid = null)
+    public bool ReconnectAndRejoin(int retries = 20, string roomid = null)
     {
         if(!string.IsNullOrEmpty(roomid))
         {
@@ -1269,7 +1269,10 @@ EventBasedNetListener listener = new EventBasedNetListener();
                     LNSClient fromClient = currentClient;
                     DeliveryMethod _deliveryMethod = deliveryMethod;
 
-                    subReader.SetSource(reader.RawData,reader.Position, reader.RawDataSize);
+
+                    
+                    //subReader.SetSource(reader.RawData,reader.Position, reader.AvailableBytes);
+                    subReader.SetSource(reader.GetRemainingBytes());
 
                     threadDispatcher.Add(() =>
                     {
@@ -1279,13 +1282,14 @@ EventBasedNetListener listener = new EventBasedNetListener();
                         }
                         catch (System.Exception ex)
                         {
+                            //Debug.Log($"reader.Position: {reader.Position} reader.AvailableBytes: {reader.AvailableBytes}");
                             Debug.LogError(ex.Message + " " + ex.StackTrace);
                         }
                         subReader.Recycle();
-                        reader.Recycle();
+                      
 
                     });
-                    return;
+                    //return;
 
 
                 }
@@ -1299,7 +1303,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
     private void Listener_NetworkReceiveEvent(NetPeer peer, NetPacketReader packetReader,byte channel, DeliveryMethod deliveryMethod)
     {
         LNSReader reader = LNSReader.GetFromPool();
-        reader.SetSource(packetReader.RawData, packetReader.Position, packetReader.RawDataSize);
+        reader.SetSource( packetReader.RawData, packetReader.Position, packetReader.RawDataSize);
         ProcessReceivedData(reader, deliveryMethod);
         packetReader.Recycle();
     }
