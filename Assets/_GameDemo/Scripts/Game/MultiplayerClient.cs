@@ -123,22 +123,7 @@ public class MultiplayerClient : MonoBehaviour,ILNSDataReceiver
     }
 
 
-    public void SendAudio(byte[] data)
-    {
-        if (connector.isConnected && connector.isInActiveRoom)
-        {
-            writer.Reset();
-
-
-            writer.Put(player.audioRecorder.frequency);
-            writer.Put(player.audioRecorder.channels);
-            writer.Put(data);
-            //w.Put("g61NBM8ENdFE8kUeZMulKBHL3uK7S6rkIDcApbrQ4qRHzOm7jibPFnjLyGGQDVktU7neuegfkY9TKbJrOnnJi6DqqFcQzQZrhipJclx5Qv08wVRGEpoQA8xxzhHRY1R4MdWPg5lDMeIRrANTwifTB3bkQDplGgDrQ095UrQHrMuMInuHM29MDzr6FmCEscITnrD5WdTLaihK9CqhH4vdz8lqF90RbvlEIDrOFXM94SQ1Qm1mvN8rlbsAZ05YD3jE4d68HsQt2WbA3t5Gw0mycInVewEvbDGJQMpgGIHbmJ2ZPloZE8BGKiKehcO8ZreW4MqScTzL4cONEESoTN1RSC91hXK8ov8C5sKyPSOPMUK6qwNz0FCxYiS4A7fC2a6afQNs4Xi0Z2rzLJrN7UcSaFNR3fCkWLo2bcrfkV4pPiiWeiVprD6eDzUH2qSJsNXnob8GVM8k8utpA6E481OzVBZ9plxXasWDt5KF1RU3W4WBD09rw6wUhjFR8KFOfH19ikO5AJCKorzdEQrhy0Eyt2EQ2w2DSaiAxXH9yTCK4XMJB24lBw38u5sqNpDGP0qrgGvdPMmv3ApCLprYTChthrSQ0z0lNh23reHdlXWCuQYGGR13pFoU1gXhokhmj4eJYk5FGU1m5S0uHzF0gCirN37N8xc0GwtWzf3eqqw0xncpTif6pvfALpZaCiZzlGCeFE8rZFiDFtRSTYKGwYRXdgPRBbIUvk3wtdiCkFUVVcG79NGUZVzoWYVmZhglTcz4GhUXugb5hshtEmvgWSdLKAI0lXySAJhzg97iMbZszWEoqlDMkiLCDrPZfX7yyNhPg0GD6OMf78t8awy8rmTRIL5VXyO0XPLIo3yuGLOKBsdOGu60uZigDOMuBFBs4lCr4r4BPjclilhuIbJtAr8jxYAPVnGg4XBTXJX2baIXyIZGuwt3Rt7eAFOkMrdrXRUz1WI0xET52jPtUyZK333UMAbylHOeyALaATUH2iQ6");
-
-
-            connector.RaiseEventOnAll(10, writer, DeliveryMethod.ReliableOrdered);
-        }
-    }
+   
 
     public void OnEventRaised(LNSClient from,ushort eventCode, LNSReader reader, DeliveryMethod deliveryMethod)
     {

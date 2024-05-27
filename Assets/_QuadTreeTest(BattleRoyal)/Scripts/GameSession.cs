@@ -112,6 +112,11 @@ public class GameSession : MonoBehaviour,ILNSDataReceiver
         {
             Debug.Log("Masterclient changed to "+client.id);
         };
+
+        connector.onPlayerConnected = (client) =>
+        {
+            Debug.Log("onPlayerConnected " + client.id);
+        };
         connector.Connect();
     }
 

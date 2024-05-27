@@ -33,21 +33,38 @@ public class FakeClient : ILNSDataReceiver
             connector.JoinRoomOrCreateIfNotExist("test", 10000);
         };
 
+        if (id.Contains("_10"))
+        {
+
+
+            connector.onPlayerConnected += (cClient) =>
+            {
+                
+                Debug.Log(cClient.id + " connected");
+            };
+        }
         connector.Connect();
     }
 
     public void SendData()
     {
+        //Debug.Log("connector.isConnected : " + connector.isConnected + " | connector.isInActiveRoom: " + connector.isInActiveRoom);
         writer.Reset();
-        writer.Put("Message from " + id + " at "+ System.DateTime.Now.ToString());
-        connector.RaiseEventOnAll(0, writer, DeliveryMethod.ReliableOrdered);
+        writer.Put("Message from " + id + " at " +  System.DateTime.Now.ToString());
+        connector.RaiseEventOnAll(15, writer, DeliveryMethod.ReliableOrdered);
     }
 
     public void OnEventRaised(LNSClient from, ushort eventCode, LNSReader reader, DeliveryMethod deliveryMethod)
     {
         if(messageReceiver != null)
         {
-            messageReceiver(reader.GetString());
+            if(eventCode != 15)
+            {
+                Debug.Log("Wrong event code "+eventCode);
+            }
+            
+            //Debug.Log(reader.AvailableBytes + " "+reader.PeekUShort());
+            messageReceiver( reader.GetString());
         }
     }
 

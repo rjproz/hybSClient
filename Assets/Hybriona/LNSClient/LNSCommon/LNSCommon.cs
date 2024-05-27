@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 public class LNSConstants
 {
+    public const byte SERVER_EVT_VERIFY_CLIENT = 1;
     public const byte SERVER_EVT_FETCH_ROOM_LIST = 49;
     public const byte SERVER_EVT_CREATE_ROOM = 50;
     public const byte SERVER_EVT_CREATE_OR_JOIN_ROOM = 51;
@@ -12,6 +13,7 @@ public class LNSConstants
     public const byte SERVER_EVT_JOIN_RANDOM_ROOM = 55;
     public const byte SERVER_EVT_MAKE_ME_MASTERCLIENT = 56;
     public const byte SERVER_EVT_ROOM_EXIST_QUERY = 57;
+
 
     public const byte SERVER_EVT_LOCK_ROOM = 60;
     public const byte SERVER_EVT_UNLOCK_ROOM = 61;
@@ -30,6 +32,7 @@ public class LNSConstants
     public const byte CLIENT_EVT_ROOM_MASTERCLIENT_CHANGED = 3;
     public const byte CLIENT_EVT_ROOM_DISCONNECTED = 4;
     public const byte CLIENT_EVT_ROOM_CACHE_DATA = 5;
+    public const byte CLIENT_EVT_VERIFIED = 6;
 
     public const byte CLIENT_EVT_ROOM_LIST = 9;
     public const byte CLIENT_EVT_ROOM_CREATED = 10;
@@ -86,7 +89,8 @@ public enum CLIENT_PLATFORM
     DESKTOP_MACOS = 2,
     DESKTOP_LINUX = 3,
     IOS = 4,
-    ANDROID = 5
+    ANDROID = 5,
+    WEBGL = 6
 };
 
 public enum CONNECTION_FAILURE_CODE
