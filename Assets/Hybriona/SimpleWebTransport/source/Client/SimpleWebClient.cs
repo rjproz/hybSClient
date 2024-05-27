@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using UnityEngine;
-
 namespace Mirror.SimpleWeb
 {
     public enum ClientState
@@ -50,6 +49,11 @@ namespace Mirror.SimpleWeb
         public void ProcessMessageQueue()
         {
             int processedCount = 0;
+            
+            while (pendingSend.TryDequeue(out ArraySegment<byte> segment))
+            {
+                Send(segment);
+            }
             // check enabled every time incase behaviour was disabled after data
             while (
                 
@@ -79,6 +83,12 @@ namespace Mirror.SimpleWeb
             }
         }
 
+        public void SendEnquque(ArraySegment<byte> segment)
+        {
+            pendingSend.Enqueue(segment);
+        }
+
+        private ConcurrentQueue<ArraySegment<byte>> pendingSend = new ConcurrentQueue<ArraySegment<byte>>();
         public abstract void Connect(Uri serverAddress);
         public abstract void Disconnect();
         public abstract void Send(ArraySegment<byte> segment);

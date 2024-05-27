@@ -46,17 +46,22 @@ public class MultiplayerCCUTest : MonoBehaviour
         }
 
 
-       
-        receiver.messageReceiver += (string message) =>
+        if (receiver != null)
         {
-            messageText.text = message;
-        };
+            receiver.messageReceiver += (string message) =>
+            {
+                messageText.text = message;
+            };
+        }
 
         while(true)
         {
-            yield return null;
-            //yield return new WaitForSeconds(Random.Range(1f,2f));
-            sender.SendData();
+            for (int i = 0; i < clients.Count; i++)
+            {
+                yield return null;
+                //yield return new WaitForSeconds(Random.Range(1f,2f));
+                clients[i].SendData();
+            }
         }
     }
 

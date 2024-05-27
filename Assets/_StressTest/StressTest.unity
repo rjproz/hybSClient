@@ -585,7 +585,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   local: 0
-  ccu: 11
+  ccu: 100
   messageText: {fileID: 1032842737}
 --- !u!1 &1676970232
 GameObject:
