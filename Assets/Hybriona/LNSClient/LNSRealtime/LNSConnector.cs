@@ -259,14 +259,14 @@ EventBasedNetListener listener = new EventBasedNetListener();
     private Coroutine webGLLooper;
     IEnumerator StartUpdateLoopWebGL()
     {
-
+        WaitForSeconds waitForSeconds = new WaitForSeconds(.04f);
         if (websocketClient != null)
         {
             while (true)
             {
                 //Debug.Log("websocketClient.ProcessMessageQueue");
                 websocketClient.ProcessMessageQueue();
-                yield return null;
+                yield return waitForSeconds;
             }
         }
 
@@ -286,7 +286,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
 
                     client.PollEvents();
 
-                    Thread.Sleep(15);
+                    Thread.Sleep(30);
                 }
 
             }).Start();
