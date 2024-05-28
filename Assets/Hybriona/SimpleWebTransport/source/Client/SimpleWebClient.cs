@@ -50,11 +50,11 @@ namespace Mirror.SimpleWeb
         {
             int processedCount = 0;
             
-            while (pendingSend.TryDequeue(out ArraySegment<byte> segment))
-            {
-                Send(segment);
-            }
-            // check enabled every time incase behaviour was disabled after data
+            //while (pendingSend.TryDequeue(out ArraySegment<byte> segment))
+            //{
+            //    Send(segment);
+            //}
+           
             while (
                 
                 processedCount < maxMessagesPerTick &&
