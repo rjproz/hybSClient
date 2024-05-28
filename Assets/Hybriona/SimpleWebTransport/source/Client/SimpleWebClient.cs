@@ -83,10 +83,11 @@ namespace Mirror.SimpleWeb
             }
         }
 
-        public void SendEnquque(ArraySegment<byte> segment)
-        {
-            pendingSend.Enqueue(segment);
-        }
+        //public void SendEnquque(ArraySegment<byte> segment)
+        //{
+        //    pendingSend.Enqueue(segment);
+           
+        //}
 
         private ConcurrentQueue<ArraySegment<byte>> pendingSend = new ConcurrentQueue<ArraySegment<byte>>();
         public abstract void Connect(Uri serverAddress);

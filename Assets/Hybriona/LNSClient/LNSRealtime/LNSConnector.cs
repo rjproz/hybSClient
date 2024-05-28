@@ -178,7 +178,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
     private void WebsocketClient_onConnect()
     {
         Debug.Log("WebsocketClient_onConnect");
-        websocketClient.SendEnquque(new ArraySegment<byte>(clientDataWriter.Data,0, clientDataWriter.Length));
+        websocketClient.Send(new ArraySegment<byte>(clientDataWriter.Data,0, clientDataWriter.Length));
 
         
     }
@@ -414,7 +414,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 writer.Put(LNSConstants.SERVER_EVT_ROOM_EXIST_QUERY);
                 writer.Put(roomdId);
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
@@ -444,7 +444,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 }
 
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
@@ -467,7 +467,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 parameters.AppendToWriter(writer);
 
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
@@ -498,7 +498,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 }
 
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
@@ -526,7 +526,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                     filter.AppendToWriter(writer);
                 }
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
@@ -546,7 +546,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 writer.Put(LNSConstants.SERVER_EVT_REJOIN_ROOM);
                 writer.Put(roomid);
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
@@ -567,7 +567,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 writer.Put(_lastConnectedRoom);
 
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
@@ -589,7 +589,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 writer.Put(roomid);
                 writer.Put(maxPlayers);
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
@@ -608,7 +608,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 writer.Reset();
                 writer.Put(LNSConstants.SERVER_EVT_LOCK_ROOM);
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
@@ -627,7 +627,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 writer.Reset();
                 writer.Put(LNSConstants.SERVER_EVT_UNLOCK_ROOM);
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
@@ -652,7 +652,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 writer.Put(m_writer.Data, 0, m_writer.Length);
 
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                  if (deliveryMethod != DeliveryMethod.ReliableOrdered &&
                     deliveryMethod != DeliveryMethod.ReliableUnordered && peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
@@ -684,7 +684,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 writer.Put(rawData);
 
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 if (deliveryMethod != DeliveryMethod.ReliableOrdered &&
                    deliveryMethod != DeliveryMethod.ReliableUnordered && peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
@@ -730,7 +730,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 writer.Put(m_writer.Data, 0, m_writer.Length);
 
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 if (deliveryMethod != DeliveryMethod.ReliableOrdered &&
                     deliveryMethod != DeliveryMethod.ReliableUnordered && peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
@@ -777,7 +777,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 writer.Put(rawData);
 
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 if (deliveryMethod != DeliveryMethod.ReliableOrdered &&
                    deliveryMethod != DeliveryMethod.ReliableUnordered && peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
@@ -850,7 +850,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 writer.Put(m_writer.Data, 0, m_writer.Length);
 
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 if (deliveryMethod != DeliveryMethod.ReliableOrdered &&
                    deliveryMethod != DeliveryMethod.ReliableUnordered && peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
@@ -883,7 +883,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 writer.Put(eventCode);
                 writer.Put(rawData);
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 if (deliveryMethod != DeliveryMethod.ReliableOrdered &&
                    deliveryMethod != DeliveryMethod.ReliableUnordered && peer.GetMaxSinglePacketSize(deliveryMethod) - 4 < writer.Length)
@@ -916,7 +916,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                         writer.Put(localClient.id);
                         writer.Put(m_writer.Data,0, m_writer.Length);
 #if UNITY_WEBGL
-                    websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                    websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                         peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
@@ -951,7 +951,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                     writer.Put(localClient.id);
                     writer.Put(rawData);
 #if UNITY_WEBGL
-                    websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                    websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                     peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
@@ -981,7 +981,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 writer.Put(LNSConstants.SERVER_EVT_MAKE_ME_MASTERCLIENT);
 
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
@@ -1002,7 +1002,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 writer.Reset();
                 writer.Put(LNSConstants.SERVER_EVT_LEAVE_ROOM);
 #if UNITY_WEBGL
-                websocketClient.SendEnquque(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                 peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
