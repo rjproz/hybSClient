@@ -291,6 +291,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 68409dae6236c4bde97e5059598932bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isLocal: 1
   scrollRect: {fileID: 1824266966}
   field: {fileID: 301614614}
   animalNamesDB: {fileID: 4900000, guid: 1a602547d9a8c42228903cf8ea35e930, type: 3}

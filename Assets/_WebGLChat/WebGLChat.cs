@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public class WebGLChat : MonoBehaviour,ILNSManagerDataReceiver
 {
     // Start is called before the first frame update
+    public bool isLocal;
     public ScrollRect scrollRect;
     public TMPro.TMP_InputField field;
     public TextAsset animalNamesDB;
@@ -27,7 +28,14 @@ public class WebGLChat : MonoBehaviour,ILNSManagerDataReceiver
         LNSClientParameters clientParameters = new LNSClientParameters(PlayerPrefs.GetString("id"), RandomAnimalName());
        
         LNSConnectSettings connectSettings = new LNSConnectSettings();
-        connectSettings.serverIp = "vps.hybriona.com";
+        if (isLocal)
+        {
+            connectSettings.serverIp = "localhost";
+        }
+        else
+        {
+            connectSettings.serverIp = "vps.hybriona.com";
+        }
         connectSettings.serverPort = 10002;
         connectSettings.serverSecurityKey = "iamatestserver";// ServerKey.GetKey();
         connectSettings.gameKey = "com.hybriona.webgl_chat";
