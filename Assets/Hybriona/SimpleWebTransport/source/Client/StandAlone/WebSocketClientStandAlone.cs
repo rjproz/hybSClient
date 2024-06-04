@@ -25,7 +25,7 @@ namespace Mirror.SimpleWeb
 
         public override void Connect(Uri serverAddress)
         {
-            UnityEngine.Debug.Log(serverAddress);
+            
             state = ClientState.Connecting;
             Thread receiveThread = new Thread(() => ConnectAndReceiveLoop(serverAddress));
             receiveThread.IsBackground = true;

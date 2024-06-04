@@ -8,7 +8,10 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/_WebGLChat/webglChatScene.unity
     guid: 7cf2acaed6af14ceea16433cd62dcae5
-  - enabled: 1
+  - enabled: 0
     path: Assets/_StressTest/StressTest.unity
     guid: 2c968883e506a45a5ae23c48b5395569
+  - enabled: 1
+    path: Assets/_StressTest_Websocket/StressTestWebsockets.unity
+    guid: 58f01ea7f36a749a39c1aae72699d1d5
   m_configObjects: {}
