@@ -10,10 +10,24 @@ public class WebsocketCCUTest : MonoBehaviour
     public int ccu;
     public Text messageText;
 
-    
+    public TMPro.TMP_InputField ccuField;
+    public Button startButton;
+
+
     private FakeClientWebsocket receiver;
     private List<FakeClientWebsocket> clients = new List<FakeClientWebsocket>();
-    IEnumerator Start()
+
+    private void Start()
+    {
+        startButton.onClick.AddListener(() =>
+        {
+            startButton.interactable = false;
+            ccu = int.Parse(ccuField.text);
+            StartCoroutine(StartProcess());
+        });
+    }
+
+    IEnumerator StartProcess()
     {
         Application.targetFrameRate = 30;
         string idoffset = Random.Range(1, 999999)+"" + Random.Range(1, 999999); 
@@ -36,7 +50,7 @@ public class WebsocketCCUTest : MonoBehaviour
 
             
 
-            if( i == 10)
+            if( i == 0)
             {
                 receiver = client;
             }
