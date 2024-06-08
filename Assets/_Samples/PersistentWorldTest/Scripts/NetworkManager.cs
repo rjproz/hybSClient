@@ -17,7 +17,7 @@ public class NetworkManager : MonoBehaviour,ILNSManagerDataReceiver
         treePrefab.SetActive(false);
         Application.targetFrameRate = 60;
         //StartCoroutine(TestLerp());
-#if UNITY_SERVER && !UNITY_EDITOR
+#if UNITY_SERVER || UNITY_EDITOR
         isServer = true;
         Application.targetFrameRate = 10;
 #endif

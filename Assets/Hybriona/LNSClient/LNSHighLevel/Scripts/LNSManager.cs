@@ -262,10 +262,19 @@ public class LNSManager : MonoBehaviour,ILNSDataReceiver
         Instance.m_connector.RaiseEventOnMasterClient(eventCode, writer, deliveryMethod);
     }
 
+    public static void RaiseEventOnNearby(ushort eventCode,Vector2 position,float extends, LNSWriter writer, DeliveryMethod deliveryMethod = DeliveryMethod.ReliableOrdered)
+    {
+        if (eventCode <= 10)
+        {
+            throw new System.Exception("Eventcode 0-10 is reserved for internal use");
+        }
+        Instance.m_connector.RaiseEventOnNearby(eventCode, position,extends, writer, deliveryMethod);
+    }
+
     #endregion
 
 
-    
+
     private static LNSManager m_instance;
 
     private void Awake()
