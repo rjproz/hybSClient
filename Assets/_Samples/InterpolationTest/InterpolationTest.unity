@@ -457,7 +457,7 @@ MonoBehaviour:
   mainPlayer: {fileID: 416319495}
   mainPlayerSpeed: 5
   clonePlayer: {fileID: 154992512}
-  sendRate: 30
+  sendRate: 20
   latency_ms: 1000
   targetPoint: {x: 0, y: 0, z: 0}
 --- !u!4 &1155503434
