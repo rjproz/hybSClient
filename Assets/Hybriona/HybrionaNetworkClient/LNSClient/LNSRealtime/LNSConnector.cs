@@ -672,6 +672,26 @@ EventBasedNetListener listener = new EventBasedNetListener();
     }
 
 
+    public bool RaisePingToServer()
+    {
+        if (isConnected && isInActiveRoom)
+        {
+            lock (thelock)
+            {
+                writer.Reset();
+                writer.Put(LNSConstants.SERVER_EVT_CLIENT_PING);
+                writer.Put((byte)1);
+
+#if UNITY_WEBGL
+                websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
+#else
+                peer.Send(writer, DeliveryMethod.ReliableOrdered);
+#endif
+                return true;
+            }
+        }
+        return false;
+    }
     public bool RaiseEventOnAll(ushort eventCode, byte [] rawData, DeliveryMethod deliveryMethod)
     {
         if (isConnected && isInActiveRoom)
