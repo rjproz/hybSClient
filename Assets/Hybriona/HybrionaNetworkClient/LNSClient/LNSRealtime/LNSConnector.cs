@@ -1059,6 +1059,7 @@ public class LNSConnector : IDisposable
         if (isConnected && isInActiveRoom)
         {
             _lastConnectedRoom = null;
+            isInActiveRoom = false;
             lock (thelock)
             {
                 writer.Reset();
