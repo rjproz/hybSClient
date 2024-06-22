@@ -106,7 +106,8 @@ public class LNSConnector : IDisposable
 
 #if UNITY_WEBGL
         //https://stackoverflow.com/questions/10175812/how-to-generate-a-self-signed-ssl-certificate-using-openssl
-        var tcpConfig = new TcpConfig(true, 0, 0);
+
+        var tcpConfig = new TcpConfig(true, 10 * 1000, 10 * 1000);
         websocketClient = SimpleWebClient.Create(16 * 1024,3000, tcpConfig);
         
         websocketClient.onConnect += WebsocketClient_onConnect;
@@ -138,6 +139,26 @@ EventBasedNetListener listener = new EventBasedNetListener();
     private void WebsocketClient_onError(Exception obj)
     {
         Debug.Log("Error "+obj.Message);
+        _lastconnectedIP = null;
+        clients.Clear();
+#if UNITY_WEBGL
+        try
+        {
+            websocketClient.Disconnect();
+        }catch
+        {
+
+        }
+#endif
+        if (onDisconnected != null)
+        {
+            DispatchToMainThread(() =>
+            {
+                onDisconnected();
+
+            });
+
+        }
     }
 
     private void WebsocketClient_onDisconnect()
@@ -186,7 +207,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
 #endif
 
 
-    public void SetDataReceiver(ILNSDataReceiver dataReceiver)
+        public void SetDataReceiver(ILNSDataReceiver dataReceiver)
     {
         this.dataReceiver = dataReceiver;
     }
