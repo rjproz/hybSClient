@@ -9,9 +9,9 @@ using UnityEngine;
 
 public class LNSConnector : IDisposable
 {
-   
 
-   
+
+
     public bool isConnected { get; private set; }
     public bool isInActiveRoom { get; private set; } = false;
 
@@ -71,12 +71,12 @@ public class LNSConnector : IDisposable
     public string _lastConnectedRoom { get; protected set; }
     private string _lastConnectedRoomMasterClientId;
 
-    public LNSConnector(LNSClientParameters clientParameters,LNSConnectSettings settings, ILNSDataReceiver dataReceiver)
+    public LNSConnector(LNSClientParameters clientParameters, LNSConnectSettings settings, ILNSDataReceiver dataReceiver)
     {
         this.clientParameters = clientParameters;
-       
+
         this.settings = settings;
-       
+
 
         this.dataReceiver = dataReceiver;
         this.threadDispatcher = LNSMainThreadDispatcher.GetInstance();
@@ -87,7 +87,7 @@ public class LNSConnector : IDisposable
 
         this.settings.Validate();
 
-        
+
 
         SetClientId(this.clientParameters.id);
         SetDisplayName(this.clientParameters.displayName);
@@ -108,8 +108,8 @@ public class LNSConnector : IDisposable
         //https://stackoverflow.com/questions/10175812/how-to-generate-a-self-signed-ssl-certificate-using-openssl
 
         var tcpConfig = new TcpConfig(true, 10 * 1000, 10 * 1000);
-        websocketClient = SimpleWebClient.Create(16 * 1024,3000, tcpConfig);
-        
+        websocketClient = SimpleWebClient.Create(16 * 1024, 3000, tcpConfig);
+
         websocketClient.onConnect += WebsocketClient_onConnect;
         websocketClient.onData += WebsocketClient_onData;
         websocketClient.onDisconnect += WebsocketClient_onDisconnect;
@@ -138,14 +138,16 @@ EventBasedNetListener listener = new EventBasedNetListener();
 #if UNITY_WEBGL
     private void WebsocketClient_onError(Exception obj)
     {
-        Debug.Log("Error "+obj.Message);
+        Debug.Log("Error " + obj.Message);
         _lastconnectedIP = null;
         clients.Clear();
+        isConnected = localClient.isConnected = false;
 #if UNITY_WEBGL
         try
         {
             websocketClient.Disconnect();
-        }catch
+        }
+        catch
         {
 
         }
@@ -163,6 +165,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
 
     private void WebsocketClient_onDisconnect()
     {
+        isConnected = localClient.isConnected = false;
         if (onDisconnected != null)
         {
             DispatchToMainThread(() =>
@@ -176,7 +179,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
 
     private void WebsocketClient_onData(ArraySegment<byte> data)
     {
-       
+
         if (data[0] == LNSConstants.CLIENT_EVT_VERIFIED)
         {
             localClient.isConnected = isConnected = true;
@@ -199,23 +202,23 @@ EventBasedNetListener listener = new EventBasedNetListener();
     private void WebsocketClient_onConnect()
     {
         Debug.Log("WebsocketClient_onConnect");
-        websocketClient.Send(new ArraySegment<byte>(clientDataWriter.Data,0, clientDataWriter.Length));
+        websocketClient.Send(new ArraySegment<byte>(clientDataWriter.Data, 0, clientDataWriter.Length));
 
-        
+
     }
 
 #endif
 
 
-        public void SetDataReceiver(ILNSDataReceiver dataReceiver)
+    public void SetDataReceiver(ILNSDataReceiver dataReceiver)
     {
         this.dataReceiver = dataReceiver;
     }
-    
+
     public bool SetClientId(string id)
     {
         if (!isConnected)
-        {   
+        {
             localClient.id = this.id = id;
         }
         return false;
@@ -223,7 +226,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
 
     public bool SetDisplayName(string displayName)
     {
-        if(isConnected && isInActiveRoom)
+        if (isConnected && isInActiveRoom)
         {
             return false;
         }
@@ -233,7 +236,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
 
     public int GetPing()
     {
-        if(isConnected)
+        if (isConnected)
         {
 #if !UNITY_WEBGL
             return peer.Ping;
@@ -249,7 +252,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
 
     public bool Connect(string ip, int port)
     {
-        if(isConnected)
+        if (isConnected)
         {
             return false;
         }
@@ -258,7 +261,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
         //new Thread(() =>{
 
 #if UNITY_WEBGL
-        if(webGLLooper != null)
+        if (webGLLooper != null)
         {
             threadDispatcher.StopCoroutine(webGLLooper);
         }
@@ -273,8 +276,8 @@ EventBasedNetListener listener = new EventBasedNetListener();
         {
             websocketClient.Connect(new Uri("wss://" + ip + ":" + (port + 1)));
         }
-       
-        
+
+
 
 #else
         client.Start();
@@ -344,7 +347,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
 
     public bool ReconnectAndRejoin(int retries = 20, string roomid = null)
     {
-        if(!string.IsNullOrEmpty(roomid))
+        if (!string.IsNullOrEmpty(roomid))
         {
             _lastConnectedRoom = roomid;
         }
@@ -355,9 +358,9 @@ EventBasedNetListener listener = new EventBasedNetListener();
             {
                 for (int i = 0; i < retries; i++)
                 {
-                  
 
-                    Debug.Log("Reconnecting: Begin "+i);
+
+                    Debug.Log("Reconnecting: Begin " + i);
 #if !UNITY_WEBGL
                     client.TriggerUpdate();
                     peer = client.Connect(_lastconnectedIP, _lastconnectedPort, clientDataWriter);
@@ -403,7 +406,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
         return false;
     }
 
-  
+
 
 
     public bool WasConnectedToARoom()
@@ -430,7 +433,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
 
     public bool QueryIfRoomExists(string roomdId)
     {
-        if(isConnected && !isInActiveRoom)
+        if (isConnected && !isInActiveRoom)
         {
             lock (thelock)
             {
@@ -472,7 +475,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
 #else
                 peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
-               
+
             }
             return true;
         }
@@ -495,14 +498,14 @@ EventBasedNetListener listener = new EventBasedNetListener();
 #else
                 peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
-                
+
             }
             return true;
         }
         return false;
     }
 
-    public bool JoinRoom(string roomid,string password = null)
+    public bool JoinRoom(string roomid, string password = null)
     {
         if (isConnected && !isInActiveRoom)
         {
@@ -536,7 +539,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
     {
         if (isConnected && !isInActiveRoom)
         {
-           
+
             lock (thelock)
             {
                 writer.Reset();
@@ -601,7 +604,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
         return false;
     }
 
-    public bool JoinRoomOrCreateIfNotExist(string roomid,int maxPlayers = 1000)
+    public bool JoinRoomOrCreateIfNotExist(string roomid, int maxPlayers = 1000)
     {
         if (isConnected && !isInActiveRoom)
         {
@@ -662,9 +665,9 @@ EventBasedNetListener listener = new EventBasedNetListener();
     }
 
 
-   
 
-    public bool RaiseEventOnAll(ushort eventCode,LNSWriter m_writer, DeliveryMethod deliveryMethod)
+
+    public bool RaiseEventOnAll(ushort eventCode, LNSWriter m_writer, DeliveryMethod deliveryMethod)
     {
         if (isConnected && isInActiveRoom)
         {
@@ -686,7 +689,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 }
                 peer.Send(writer, deliveryMethod);
 #endif
-               
+
 
 
             }
@@ -716,7 +719,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
         }
         return false;
     }
-    public bool RaiseEventOnAll(ushort eventCode, byte [] rawData, DeliveryMethod deliveryMethod)
+    public bool RaiseEventOnAll(ushort eventCode, byte[] rawData, DeliveryMethod deliveryMethod)
     {
         if (isConnected && isInActiveRoom)
         {
@@ -752,7 +755,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
     /// <param name="m_writer"></param>
     /// <param name="deliveryMethod"></param>
     /// <returns></returns>
-    public bool RaiseEventOnNearby(ushort eventCode,Vector2 position,float extends,LNSWriter m_writer, DeliveryMethod deliveryMethod)
+    public bool RaiseEventOnNearby(ushort eventCode, Vector2 position, float extends, LNSWriter m_writer, DeliveryMethod deliveryMethod)
     {
         if (isConnected && isInActiveRoom)
         {
@@ -800,7 +803,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
     /// <param name="rawData"></param>
     /// <param name="deliveryMethod"></param>
     /// <returns></returns>
-    public bool RaiseEventOnNearby(ushort eventCode, Vector2 position, float extends, byte [] rawData, DeliveryMethod deliveryMethod)
+    public bool RaiseEventOnNearby(ushort eventCode, Vector2 position, float extends, byte[] rawData, DeliveryMethod deliveryMethod)
     {
         if (isConnected && isInActiveRoom)
         {
@@ -845,19 +848,19 @@ EventBasedNetListener listener = new EventBasedNetListener();
         return RaiseEventOnClient(client.id, eventCode, m_writer, deliveryMethod);
     }
 
-    public bool RaiseEventOnClient(LNSClient client, ushort eventCode, byte [] rawData, DeliveryMethod deliveryMethod)
+    public bool RaiseEventOnClient(LNSClient client, ushort eventCode, byte[] rawData, DeliveryMethod deliveryMethod)
     {
         return RaiseEventOnClient(client.id, eventCode, rawData, deliveryMethod);
     }
 
-    public bool RaiseEventOnMasterClient (ushort eventCode, LNSWriter m_writer, DeliveryMethod deliveryMethod)
+    public bool RaiseEventOnMasterClient(ushort eventCode, LNSWriter m_writer, DeliveryMethod deliveryMethod)
     {
-        if(isLocalPlayerMasterClient)
+        if (isLocalPlayerMasterClient)
         {
             return false;
         }
 
-       
+
         if (masterClient != null)
         {
             return RaiseEventOnClient(masterClient.id, eventCode, m_writer, deliveryMethod);
@@ -865,14 +868,14 @@ EventBasedNetListener listener = new EventBasedNetListener();
         return false;
     }
 
-    public bool RaiseEventOnMasterClient(ushort eventCode, byte [] rawData, DeliveryMethod deliveryMethod)
+    public bool RaiseEventOnMasterClient(ushort eventCode, byte[] rawData, DeliveryMethod deliveryMethod)
     {
         if (isLocalPlayerMasterClient)
         {
             return false;
         }
 
-       
+
         if (masterClient != null)
         {
             return RaiseEventOnClient(masterClient.id, eventCode, rawData, deliveryMethod);
@@ -880,11 +883,11 @@ EventBasedNetListener listener = new EventBasedNetListener();
         return false;
     }
 
-    public bool RaiseEventOnClient(string clientId,ushort eventCode, LNSWriter m_writer, DeliveryMethod deliveryMethod)
+    public bool RaiseEventOnClient(string clientId, ushort eventCode, LNSWriter m_writer, DeliveryMethod deliveryMethod)
     {
         if (isConnected && isInActiveRoom)
         {
-            
+
             lock (thelock)
             {
                 writer.Reset();
@@ -913,7 +916,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
         return false;
     }
 
-    public bool RaiseEventOnClient(string clientId, ushort eventCode, byte [] rawData, DeliveryMethod deliveryMethod)
+    public bool RaiseEventOnClient(string clientId, ushort eventCode, byte[] rawData, DeliveryMethod deliveryMethod)
     {
         if (isConnected && isInActiveRoom)
         {
@@ -952,20 +955,20 @@ EventBasedNetListener listener = new EventBasedNetListener();
             if (isLocalPlayerMasterClient)
             {
                 //new Thread(() =>{
-                    lock (thelock)
-                    {
-                        writer.Reset();
-                        writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_CACHE);
-                        writer.Put(key);
-                        writer.Put(localClient.id);
-                        writer.Put(m_writer.Data,0, m_writer.Length);
+                lock (thelock)
+                {
+                    writer.Reset();
+                    writer.Put(LNSConstants.SERVER_EVT_RAW_DATA_CACHE);
+                    writer.Put(key);
+                    writer.Put(localClient.id);
+                    writer.Put(m_writer.Data, 0, m_writer.Length);
 #if UNITY_WEBGL
                     websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
 #else
                         peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
 
-                    }
+                }
                 //}).Start();
                 return true;
             }
@@ -974,13 +977,13 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 throw new Exception("Only master client can send Cached Data to server");
             }
 
-           
+
         }
         return false;
-        
+
     }
 
-    public bool SendCachedDataToAll(string key, byte [] rawData)
+    public bool SendCachedDataToAll(string key, byte[] rawData)
     {
         if (isConnected && isInActiveRoom)
         {
@@ -999,9 +1002,9 @@ EventBasedNetListener listener = new EventBasedNetListener();
 #else
                     peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
-                    
+
                 }
-               
+
                 return true;
             }
             else
@@ -1051,7 +1054,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                 peer.Send(writer, DeliveryMethod.ReliableOrdered);
 #endif
             }
-           
+
         }
     }
 
@@ -1322,7 +1325,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                     DeliveryMethod _deliveryMethod = deliveryMethod;
 
 
-                    
+
                     //subReader.SetSource(reader.RawData,reader.Position, reader.AvailableBytes);
                     subReader.SetSource(reader.GetRemainingBytes());
 
@@ -1338,7 +1341,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
                             Debug.LogError(ex.Message + " " + ex.StackTrace);
                         }
                         subReader.Recycle();
-                      
+
 
                     });
                     //return;
@@ -1352,10 +1355,10 @@ EventBasedNetListener listener = new EventBasedNetListener();
         }
         reader.Recycle();
     }
-    private void Listener_NetworkReceiveEvent(NetPeer peer, NetPacketReader packetReader,byte channel, DeliveryMethod deliveryMethod)
+    private void Listener_NetworkReceiveEvent(NetPeer peer, NetPacketReader packetReader, byte channel, DeliveryMethod deliveryMethod)
     {
         LNSReader reader = LNSReader.GetFromPool();
-        reader.SetSource( packetReader.RawData, packetReader.Position, packetReader.RawDataSize);
+        reader.SetSource(packetReader.RawData, packetReader.Position, packetReader.RawDataSize);
         ProcessReceivedData(reader, deliveryMethod);
         packetReader.Recycle();
     }
@@ -1366,17 +1369,17 @@ EventBasedNetListener listener = new EventBasedNetListener();
         localClient.isConnected = isConnected = isInActiveRoom = false;
         if (wasConnected)
         {
-            if(onDisconnected != null)
+            if (onDisconnected != null)
             {
                 DispatchToMainThread(() =>
                 {
                     onDisconnected();
-                   
+
                 });
-                
+
             }
         }
-       
+
         else if (onFailedToConnect != null)
         {
             try
@@ -1432,25 +1435,25 @@ EventBasedNetListener listener = new EventBasedNetListener();
                         onFailedToConnect(CONNECTION_FAILURE_CODE.COULD_NOT_CONNECT_TO_HOST);
                     });
                 }
-                
+
 
             }
-            catch(System.Exception ex)
+            catch (System.Exception ex)
             {
-                
+
                 DispatchToMainThread(() =>
                 {
                     onFailedToConnect();
                 });
             }
         }
-       
+
     }
 
     private void Listener_PeerConnectedEvent(NetPeer peer)
     {
         localClient.isConnected = isConnected = true;
-        if(onConnected != null)
+        if (onConnected != null)
         {
             DispatchToMainThread(() =>
             {
@@ -1474,11 +1477,11 @@ EventBasedNetListener listener = new EventBasedNetListener();
     {
         threadDispatcher.Add(() =>
         {
-            if(action != null)
+            if (action != null)
             {
                 action();
             }
-            
+
         });
     }
 
@@ -1487,7 +1490,7 @@ EventBasedNetListener listener = new EventBasedNetListener();
 
 #if UNITY_WEBGL
         websocketClient.Disconnect();
-     
+
 #else
         if(client != null)
         {
