@@ -109,7 +109,7 @@ public class LNSConnector : IDisposable
 
 #if UNITY_WEBGL
         //https://stackoverflow.com/questions/10175812/how-to-generate-a-self-signed-ssl-certificate-using-openssl
-        tcpConfig = new TcpConfig(true, 10 * 1000, 0);
+        tcpConfig = new TcpConfig(true, 0, 0);
 
 #else
 
@@ -138,6 +138,7 @@ public class LNSConnector : IDisposable
         Debug.Log("Error " + obj.Message);
         _lastconnectedIP = null;
         clients.Clear();
+        isInActiveRoom = false;
         isConnected = localClient.isConnected = false;
 #if UNITY_WEBGL
         try
@@ -162,6 +163,7 @@ public class LNSConnector : IDisposable
 
     private void WebsocketClient_onDisconnect()
     {
+        isInActiveRoom = false;
         isConnected = localClient.isConnected = false;
         if (onDisconnected != null)
         {
