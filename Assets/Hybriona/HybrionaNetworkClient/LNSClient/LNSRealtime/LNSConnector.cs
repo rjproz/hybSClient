@@ -70,6 +70,9 @@ public class LNSConnector : IDisposable
     private int _lastconnectedPort;
     public string _lastConnectedRoom { get; protected set; }
     private string _lastConnectedRoomMasterClientId;
+#if UNITY_WEBGL
+    private TcpConfig tcpConfig;
+#endif
 
     public LNSConnector(LNSClientParameters clientParameters, LNSConnectSettings settings, ILNSDataReceiver dataReceiver)
     {
@@ -106,17 +109,11 @@ public class LNSConnector : IDisposable
 
 #if UNITY_WEBGL
         //https://stackoverflow.com/questions/10175812/how-to-generate-a-self-signed-ssl-certificate-using-openssl
+        tcpConfig = new TcpConfig(true, 10 * 1000, 10 * 1000);
 
-        var tcpConfig = new TcpConfig(true, 10 * 1000, 10 * 1000);
-        websocketClient = SimpleWebClient.Create(16 * 1024, 3000, tcpConfig);
-
-        websocketClient.onConnect += WebsocketClient_onConnect;
-        websocketClient.onData += WebsocketClient_onData;
-        websocketClient.onDisconnect += WebsocketClient_onDisconnect;
-        websocketClient.onError += WebsocketClient_onError;
 #else
 
-EventBasedNetListener listener = new EventBasedNetListener();
+        EventBasedNetListener listener = new EventBasedNetListener();
         client = new NetManager(listener);
 
         //List to receiveEvent
@@ -261,13 +258,27 @@ EventBasedNetListener listener = new EventBasedNetListener();
         //new Thread(() =>{
 
 #if UNITY_WEBGL
+
+
         if (webGLLooper != null)
         {
             threadDispatcher.StopCoroutine(webGLLooper);
         }
 
-        webGLLooper = threadDispatcher.StartCoroutine(StartUpdateLoopWebGL());
 
+        websocketClient = SimpleWebClient.Create(16 * 1024, 3000, tcpConfig);
+
+        websocketClient.onConnect += WebsocketClient_onConnect;
+        websocketClient.onData += WebsocketClient_onData;
+        websocketClient.onDisconnect += WebsocketClient_onDisconnect;
+        websocketClient.onError += WebsocketClient_onError;
+
+
+
+        //if (webGLLooper == null)
+        {
+            webGLLooper = threadDispatcher.StartCoroutine(StartUpdateLoopWebGL());
+        }
         if (ip.Contains("localhost"))
         {
             websocketClient.Connect(new Uri("ws://" + ip + ":" + (port + 1)));
