@@ -418,12 +418,14 @@ EventBasedNetListener listener = new EventBasedNetListener();
     {
         _lastConnectedRoom = null;
         _lastconnectedIP = null;
+
         clients.Clear();
 #if UNITY_WEBGL
         websocketClient.Disconnect();
 #else
         client.DisconnectAll();
 #endif
+        localClient.isConnected = isConnected = isInActiveRoom = false;
     }
 
     public bool FetchRoomList()
