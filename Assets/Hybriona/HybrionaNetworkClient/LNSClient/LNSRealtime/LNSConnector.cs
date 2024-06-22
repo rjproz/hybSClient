@@ -258,11 +258,14 @@ EventBasedNetListener listener = new EventBasedNetListener();
         //new Thread(() =>{
 
 #if UNITY_WEBGL
-        if (webGLLooper == null)
+        if(webGLLooper != null)
         {
-            webGLLooper = threadDispatcher.StartCoroutine(StartUpdateLoopWebGL());
+            threadDispatcher.StopCoroutine(webGLLooper);
         }
-        if(ip.Contains("localhost"))
+
+        webGLLooper = threadDispatcher.StartCoroutine(StartUpdateLoopWebGL());
+
+        if (ip.Contains("localhost"))
         {
             websocketClient.Connect(new Uri("ws://" + ip + ":" + (port + 1)));
         }
