@@ -109,7 +109,7 @@ public class LNSConnector : IDisposable
 
 #if UNITY_WEBGL
         //https://stackoverflow.com/questions/10175812/how-to-generate-a-self-signed-ssl-certificate-using-openssl
-        tcpConfig = new TcpConfig(true, 10 * 1000, 10 * 1000);
+        tcpConfig = new TcpConfig(true, 10 * 1000, 0);
 
 #else
 
@@ -198,7 +198,7 @@ public class LNSConnector : IDisposable
 
     private void WebsocketClient_onConnect()
     {
-        Debug.Log("WebsocketClient_onConnect");
+
         websocketClient.Send(new ArraySegment<byte>(clientDataWriter.Data, 0, clientDataWriter.Length));
 
 
