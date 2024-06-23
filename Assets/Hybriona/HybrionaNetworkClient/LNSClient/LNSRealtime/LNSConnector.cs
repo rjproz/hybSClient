@@ -1278,6 +1278,7 @@ public class LNSConnector : IDisposable
             if (currentClient != null)
             {
                 currentClient.isConnected = false;
+                clients.Remove(currentClient);
                 if (onPlayerDisconnected != null)
                 {
                     threadDispatcher.Add(() =>
