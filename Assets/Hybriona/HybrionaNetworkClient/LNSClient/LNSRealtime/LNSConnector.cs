@@ -21,6 +21,10 @@ public class LNSConnector : IDisposable
     public bool isLocalPlayerMasterClient { get; private set; } = false;
     public Dictionary<string, byte[]> persistentData { get; private set; } = new Dictionary<string, byte[]>();
 
+
+    public string LastConnectedRoom { get; protected set; }
+    public bool runningReconnectLogic { get; private set; } = false;
+
     public OnConnected onConnected;
     public OnFailedToConnect onFailedToConnect;
     public OnDisconnected onDisconnected;
@@ -68,8 +72,10 @@ public class LNSConnector : IDisposable
 
     private string _lastconnectedIP;
     private int _lastconnectedPort;
-    public string _lastConnectedRoom { get; protected set; }
+   
     private string _lastConnectedRoomMasterClientId;
+
+   
 #if UNITY_WEBGL
     private TcpConfig tcpConfig;
 #endif
@@ -77,9 +83,8 @@ public class LNSConnector : IDisposable
     public LNSConnector(LNSClientParameters clientParameters, LNSConnectSettings settings, ILNSDataReceiver dataReceiver)
     {
         this.clientParameters = clientParameters;
-
         this.settings = settings;
-
+        this.settings.Validate();
 
         this.dataReceiver = dataReceiver;
         this.threadDispatcher = LNSMainThreadDispatcher.GetInstance();
@@ -88,7 +93,7 @@ public class LNSConnector : IDisposable
         clientDataWriter = new NetDataWriter();
         writer = new NetDataWriter();
 
-        this.settings.Validate();
+        
 
 
 
@@ -136,7 +141,7 @@ public class LNSConnector : IDisposable
     private void WebsocketClient_onError(Exception obj)
     {
         Debug.Log("Error " + obj.Message);
-        _lastconnectedIP = null;
+       
         clients.Clear();
         isInActiveRoom = false;
         isConnected = localClient.isConnected = false;
@@ -152,6 +157,11 @@ public class LNSConnector : IDisposable
 #endif
         if (onDisconnected != null)
         {
+            if (runningReconnectLogic)
+            {
+                return;
+            }
+
             DispatchToMainThread(() =>
             {
                 onDisconnected();
@@ -163,6 +173,11 @@ public class LNSConnector : IDisposable
 
     private void WebsocketClient_onDisconnect()
     {
+        if(runningReconnectLogic)
+        {
+            return;
+        }
+
         isInActiveRoom = false;
         isConnected = localClient.isConnected = false;
         if (onDisconnected != null)
@@ -181,13 +196,17 @@ public class LNSConnector : IDisposable
 
         if (data[0] == LNSConstants.CLIENT_EVT_VERIFIED)
         {
+            
             localClient.isConnected = isConnected = true;
-            if (onConnected != null)
+            if (!runningReconnectLogic)
             {
-                DispatchToMainThread(() =>
+                if (onConnected != null)
                 {
-                    onConnected();
-                });
+                    DispatchToMainThread(() =>
+                    {
+                        onConnected();
+                    });
+                }
             }
         }
         else
@@ -200,10 +219,7 @@ public class LNSConnector : IDisposable
 
     private void WebsocketClient_onConnect()
     {
-
         websocketClient.Send(new ArraySegment<byte>(clientDataWriter.Data, 0, clientDataWriter.Length));
-
-
     }
 
 #endif
@@ -261,7 +277,26 @@ public class LNSConnector : IDisposable
 
 #if UNITY_WEBGL
 
+        runningReconnectLogic = false;
+        StartWebGLSocketConnection(ip,port);
+#else
+        client.Start();
+        StartUpdateLoop();
+        peer = client.Connect(ip, port, clientDataWriter);
+#endif
 
+
+        //}).Start();
+        return true;
+    }
+
+   
+
+#if UNITY_WEBGL
+    private Coroutine webGLLooper;
+
+    private void StartWebGLSocketConnection(string ip,int port)
+    {
         if (webGLLooper != null)
         {
             threadDispatcher.StopCoroutine(webGLLooper);
@@ -275,12 +310,8 @@ public class LNSConnector : IDisposable
         websocketClient.onDisconnect += WebsocketClient_onDisconnect;
         websocketClient.onError += WebsocketClient_onError;
 
+        webGLLooper = threadDispatcher.StartCoroutine(StartUpdateLoopWebGL());
 
-
-        //if (webGLLooper == null)
-        {
-            webGLLooper = threadDispatcher.StartCoroutine(StartUpdateLoopWebGL());
-        }
         if (ip.Contains("localhost"))
         {
             websocketClient.Connect(new Uri("ws://" + ip + ":" + (port + 1)));
@@ -288,23 +319,10 @@ public class LNSConnector : IDisposable
         else
         {
             websocketClient.Connect(new Uri("wss://" + ip + ":" + (port + 1)));
+
         }
-
-
-
-#else
-        client.Start();
-        StartUpdateLoop();
-        peer = client.Connect(ip, port, clientDataWriter);
-#endif
-
-
-        //}).Start();
-        return true;
     }
 
-#if UNITY_WEBGL
-    private Coroutine webGLLooper;
     IEnumerator StartUpdateLoopWebGL()
     {
         WaitForSeconds waitForSeconds = new WaitForSeconds(.04f);
@@ -312,10 +330,61 @@ public class LNSConnector : IDisposable
         {
             while (true)
             {
-                //Debug.Log("websocketClient.ProcessMessageQueue");
                 websocketClient.ProcessMessageQueue();
                 yield return waitForSeconds;
             }
+        }
+
+    }
+
+    IEnumerator WebGLReconnect(int retries)
+    {
+       
+        for (int i=0;i<retries;i++)
+        {
+            Debug.Log("Reconnecting: Begin " + (i+1));
+
+            StartWebGLSocketConnection(_lastconnectedIP,_lastconnectedPort);
+            while(websocketClient.ConnectionState == ClientState.Connecting)
+            {
+                yield return null;
+            }
+            if(websocketClient.ConnectionState == ClientState.Connected)
+            {
+                Debug.Log("Reconnecting : Connected");
+                while(!isConnected)
+                {
+                    yield return null;
+                }
+                Debug.Log("Reconnecting : Client Verified");
+                localClient.isConnected = isConnected = true;
+                Debug.Log("Reconnecting : Rejoining Room");
+                RejoinLastRoom();
+                runningReconnectLogic = false;
+                yield break;
+            }
+        }
+
+        float timer = 5;
+        while (timer > 0)
+        {
+            timer -= Time.deltaTime;
+            yield return null;
+        }
+
+        bool wasConnected = isConnected;
+        localClient.isConnected = isConnected = isInActiveRoom = false;
+        isConnected = localClient.isConnected = false;
+        LastConnectedRoom = null;
+        _lastConnectedRoomMasterClientId = null;
+        runningReconnectLogic = false;
+        if (onDisconnected != null)
+        {
+            DispatchToMainThread(() =>
+            {
+                onDisconnected();
+            });
+
         }
 
     }
@@ -329,11 +398,7 @@ public class LNSConnector : IDisposable
             {
                 while (true)
                 {
-
-                   
-
                     client.PollEvents();
-
                     Thread.Sleep(30);
                 }
 
@@ -343,6 +408,7 @@ public class LNSConnector : IDisposable
 
     }
 #endif
+
 #if !UNITY_WEBGL
     public int GetMaxSinglePacketSize(DeliveryMethod deliveryMethod)
     {
@@ -360,21 +426,25 @@ public class LNSConnector : IDisposable
 
     public bool ReconnectAndRejoin(int retries = 20, string roomid = null)
     {
+        if (runningReconnectLogic)
+            return false;
+
         if (!string.IsNullOrEmpty(roomid))
         {
-            _lastConnectedRoom = roomid;
+            LastConnectedRoom = roomid;
         }
         if (!isConnected && !isInActiveRoom && WasConnectedToARoom())
         {
-            //TODO Reconnect logic
+            runningReconnectLogic = true;
+#if !UNITY_WEBGL
             new Thread(() =>
             {
                 for (int i = 0; i < retries; i++)
                 {
 
 
-                    Debug.Log("Reconnecting: Begin " + i);
-#if !UNITY_WEBGL
+                    Debug.Log("Reconnecting: Begin " + (i+1));
+
                     client.TriggerUpdate();
                     peer = client.Connect(_lastconnectedIP, _lastconnectedPort, clientDataWriter);
                     while (peer.ConnectionState == ConnectionState.Outgoing)
@@ -384,6 +454,7 @@ public class LNSConnector : IDisposable
 
                     if (peer.ConnectionState == ConnectionState.Connected)
                     {
+                        runningReconnectLogic = false;
                         Debug.Log("Reconnecting : Connected");
                         localClient.isConnected = isConnected = true;
                         Debug.Log("Reconnecting : Rejoining Room");
@@ -391,7 +462,7 @@ public class LNSConnector : IDisposable
                         RejoinLastRoom();
                         return;
                     }
-#endif
+
                     Debug.Log("Reconnecting : Not Connected");
                     Thread.Sleep(5000);
                 }
@@ -401,6 +472,7 @@ public class LNSConnector : IDisposable
                 isConnected = localClient.isConnected = false;
                 _lastConnectedRoom = null;
                 _lastConnectedRoomMasterClientId = null;
+                runningReconnectLogic = false;
 
                 if (onDisconnected != null)
                 {
@@ -414,6 +486,11 @@ public class LNSConnector : IDisposable
 
             }).Start();
 
+#else
+            threadDispatcher.StartCoroutine(WebGLReconnect(retries));
+
+#endif
+
             return true;
         }
         return false;
@@ -424,12 +501,12 @@ public class LNSConnector : IDisposable
 
     public bool WasConnectedToARoom()
     {
-        return !string.IsNullOrEmpty(_lastConnectedRoom);
+        return !string.IsNullOrEmpty(LastConnectedRoom);
     }
 
     public void Disconnect()
     {
-        _lastConnectedRoom = null;
+        LastConnectedRoom = null;
         _lastconnectedIP = null;
 
         clients.Clear();
@@ -602,11 +679,12 @@ public class LNSConnector : IDisposable
     {
         if (isConnected && !isInActiveRoom)
         {
+            Debug.Log("Connecting "+LastConnectedRoom);
             lock (thelock)
             {
                 writer.Reset();
                 writer.Put(LNSConstants.SERVER_EVT_REJOIN_ROOM);
-                writer.Put(_lastConnectedRoom);
+                writer.Put(LastConnectedRoom);
 
 #if UNITY_WEBGL
                 websocketClient.Send(new ArraySegment<byte>(writer.Data, 0, writer.Length));
@@ -1058,7 +1136,7 @@ public class LNSConnector : IDisposable
     {
         if (isConnected && isInActiveRoom)
         {
-            _lastConnectedRoom = null;
+            LastConnectedRoom = null;
             isInActiveRoom = false;
             lock (thelock)
             {
@@ -1105,7 +1183,7 @@ public class LNSConnector : IDisposable
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_CREATED)
         {
             isInActiveRoom = true;
-            _lastConnectedRoom = reader.GetString();
+            LastConnectedRoom = reader.GetString();
 
 
             if (onRoomCreated != null)
@@ -1147,7 +1225,7 @@ public class LNSConnector : IDisposable
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_JOINED)
         {
             isInActiveRoom = true;
-            _lastConnectedRoom = reader.GetString();
+            LastConnectedRoom = reader.GetString();
 
             if (onRoomJoined != null)
             {
@@ -1157,7 +1235,7 @@ public class LNSConnector : IDisposable
         else if (clientInstruction == LNSConstants.CLIENT_EVT_ROOM_REJOINED)
         {
             isInActiveRoom = true;
-            _lastConnectedRoom = reader.GetString();
+            LastConnectedRoom = reader.GetString();
             if (onRoomRejoined != null)
             {
                 threadDispatcher.Add(() => onRoomRejoined());

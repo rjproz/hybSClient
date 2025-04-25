@@ -59,7 +59,7 @@ public class LNSCreateRoomParameters
             writer.Put(quadTreeBounds.height);
         }
 
-        writer.Put(idleLife);
+        writer.Put(idleLife * 60);
     }
 
     public static LNSCreateRoomParameters FromReader(NetPacketReader reader)
