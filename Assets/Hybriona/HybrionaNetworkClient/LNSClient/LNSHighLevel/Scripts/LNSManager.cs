@@ -11,7 +11,7 @@ public class LNSManager : MonoBehaviour,ILNSDataReceiver
         get {
             if (m_instance == null)
             {
-                m_instance = GameObject.FindObjectOfType<LNSManager>();
+                m_instance = FindFirstObjectByType<LNSManager>();
                 if (m_instance != null)
                 {
                     GameObject.DontDestroyOnLoad(m_instance.gameObject);
@@ -201,15 +201,15 @@ public class LNSManager : MonoBehaviour,ILNSDataReceiver
         }
     }
 
-    public static string localId
+    public static uint localUniversalId
     {
         get
         {
             if(Instance.m_connector != null)
             {
-                return Instance.m_connector.localClient.id;
+                return Instance.m_connector.localClient.universalId;
             }
-            return null;
+            return 0;
         }
     }
 
@@ -325,7 +325,7 @@ public class LNSManager : MonoBehaviour,ILNSDataReceiver
         {
             //Internal Sync Methods
             string instanceId = reader.GetString();
-            var netSyncReceiver = netSyncReceivers.Find(o => o.assignedClient.id == from.id && o.instanceId == instanceId);
+            var netSyncReceiver = netSyncReceivers.Find(o => o.assignedClient.universalId == from.universalId && o.instanceId == instanceId);
             if(netSyncReceiver != null)
             {
                 netSyncReceiver.assignedClient = from;

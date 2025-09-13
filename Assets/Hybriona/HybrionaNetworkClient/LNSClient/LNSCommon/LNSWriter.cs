@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using LiteNetLib.Utils;
 using System.Collections.Generic;
+using System;
 
 public class LNSWriter : NetDataWriter
 {
@@ -77,5 +78,5 @@ public class LNSWriter : NetDataWriter
         }
     }
 
-
+   
 }

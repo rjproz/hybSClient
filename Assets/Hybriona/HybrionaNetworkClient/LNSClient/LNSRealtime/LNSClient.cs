@@ -4,8 +4,9 @@ using UnityEngine;
 
 public class LNSClient 
 {
-    public string id { get; set; }
-    public int networkID { get; set; }
+    public string generatedId { get; set; }
+   
+    public uint universalId { get; set; }
     public string displayName { get; set; }
     public CLIENT_PLATFORM platform { get; set; }
     public bool isMasterClient { get; set; }
